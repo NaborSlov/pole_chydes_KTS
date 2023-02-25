@@ -32,7 +32,7 @@ class DatabaseConfig:
 @dataclass
 class Config:
     session: Session
-    bot_config: BotConfig
+    bot: BotConfig
     database: DatabaseConfig
 
 
@@ -46,7 +46,7 @@ def setup_config(app: "Application", config_path: str) -> None:
         session=Session(
             key=raw_config['session']['key']
         ),
-        bot_config=BotConfig(
+        bot=BotConfig(
             token=raw_config['bot']['token'],
             group_id=raw_config['bot']['group_id']
         ),
