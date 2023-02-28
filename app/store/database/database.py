@@ -14,7 +14,7 @@ class Database:
         self.app = app
         self._engine: AsyncEngine | None = None
         self._db: declarative_base | None = None
-        self.session: AsyncSession | None = None
+        self.session: async_sessionmaker | None = None
 
     async def connect(self, *_: list, **__: dict) -> None:
         self._db = db
@@ -22,7 +22,5 @@ class Database:
         self.session = async_sessionmaker(self._engine, expire_on_commit=False)
 
     async def disconnect(self, *_: list, **__: dict) -> None:
-        if self.session:
-            await self.session.close()
         if self._engine:
             await self._engine.dispose()

@@ -9,6 +9,7 @@ from alembic import context
 
 from app.store.database import db
 from app.field_wonder import *
+from app.admin.models import *
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

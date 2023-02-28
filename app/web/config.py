@@ -19,6 +19,12 @@ class BotConfig:
 
 
 @dataclass
+class AdminConfig:
+    username: str
+    password: str
+
+
+@dataclass
 class DatabaseConfig:
     url_database: str
     host: str = 'localhost'
@@ -30,6 +36,7 @@ class DatabaseConfig:
 
 @dataclass
 class Config:
+    admin: AdminConfig
     session: Session
     bot: BotConfig
     database: DatabaseConfig
@@ -44,6 +51,10 @@ def setup_config(app: "Application", config_path: str) -> None:
     app.config = Config(
         session=Session(
             key=raw_config['session']['key']
+        ),
+        admin=AdminConfig(
+            username=raw_config['admin']['username'],
+            password=raw_config['admin']['password'],
         ),
         bot=BotConfig(
             token=raw_config['bot']['token'],

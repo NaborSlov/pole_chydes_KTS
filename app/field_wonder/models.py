@@ -3,21 +3,20 @@ from datetime import datetime
 import sqlalchemy as sa
 import sqlalchemy.orm as sa_orm
 
+from app.base import DBBase
 from app.store.database import db
 
 
-class Question(db):
+class Question(DBBase):
     __tablename__ = 'question'
 
-    id: sa_orm.Mapped[int] = sa_orm.mapped_column(primary_key=True)
     description: sa_orm.Mapped[str]
     answer: sa_orm.Mapped[str]
 
 
-class Round(db):
+class Round(DBBase):
     __tablename__ = 'round'
 
-    id: sa_orm.Mapped[int] = sa_orm.mapped_column(primary_key=True)
     player_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('player.id'))
     game: sa_orm.Mapped['Game'] = sa_orm.relationship(back_populates='round')
     finished: sa_orm.Mapped[datetime]
@@ -25,10 +24,9 @@ class Round(db):
     player: sa_orm.Mapped['Player'] = sa_orm.relationship()
 
 
-class Game(db):
+class Game(DBBase):
     __tablename__ = 'game'
 
-    id: sa_orm.Mapped[int] = sa_orm.mapped_column(primary_key=True)
     chat: sa_orm.Mapped[int]
     round_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('round.id'))
     question_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('question.id'))
@@ -39,10 +37,9 @@ class Game(db):
     players: sa_orm.Mapped[list["Player"]] = sa_orm.relationship(back_populates='game')
 
 
-class Player(db):
+class Player(DBBase):
     __tablename__ = 'player'
 
-    id: sa_orm.Mapped[int] = sa_orm.mapped_column(primary_key=True)
     user_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('user.id'))
     game_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('game.id'))
     score: sa_orm.Mapped[int]
@@ -52,10 +49,9 @@ class Player(db):
     game: sa_orm.Mapped["Game"] = sa_orm.relationship(back_populates="players")
 
 
-class User(db):
+class User(DBBase):
     __tablename__ = 'user'
 
-    id: sa_orm.Mapped[int] = sa_orm.mapped_column(primary_key=True)
     chat_id: sa_orm.Mapped[int] = sa_orm.mapped_column(unique=True)
     username: sa_orm.Mapped[str]
 
