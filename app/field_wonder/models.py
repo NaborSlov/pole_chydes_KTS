@@ -1,22 +1,62 @@
-from app.store.database import db
-import sqlalchemy.orm as sa_orm
+from datetime import datetime
+
 import sqlalchemy as sa
+import sqlalchemy.orm as sa_orm
+
+from app.store.database import db
 
 
-class SessionGame(db):
-    __tablename__ = 'session_game'
+class Question(db):
+    __tablename__ = 'question'
 
     id: sa_orm.Mapped[int] = sa_orm.mapped_column(primary_key=True)
-    question: sa_orm.Mapped[str] = sa_orm.mapped_column()
-    answer: sa_orm.Mapped[str] = sa_orm.mapped_column()
-    answered: sa_orm.Mapped[str] = sa_orm.mapped_column()
-    players: sa_orm.Mapped[list['Player']] = sa_orm.relationship(back_populates='session_game')
+    description: sa_orm.Mapped[str]
+    answer: sa_orm.Mapped[str]
+
+
+class Round(db):
+    __tablename__ = 'round'
+
+    id: sa_orm.Mapped[int] = sa_orm.mapped_column(primary_key=True)
+    player_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('player.id'))
+    game: sa_orm.Mapped['Game'] = sa_orm.relationship(back_populates='round')
+    finished: sa_orm.Mapped[datetime]
+
+    player: sa_orm.Mapped['Player'] = sa_orm.relationship()
+
+
+class Game(db):
+    __tablename__ = 'game'
+
+    id: sa_orm.Mapped[int] = sa_orm.mapped_column(primary_key=True)
+    chat: sa_orm.Mapped[int]
+    round_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('round.id'))
+    question_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('question.id'))
+    answered: sa_orm.Mapped[str]
+
+    round: sa_orm.Mapped['Round'] = sa_orm.relationship(back_populates='game')
+    question: sa_orm.Mapped['Question'] = sa_orm.relationship()
+    players: sa_orm.Mapped[list["Player"]] = sa_orm.relationship(back_populates='game')
 
 
 class Player(db):
     __tablename__ = 'player'
 
     id: sa_orm.Mapped[int] = sa_orm.mapped_column(primary_key=True)
-    scores: sa_orm.Mapped[int] = sa_orm.mapped_column()
-    session_game_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('session_game.id'))
-    session_game: sa_orm.Mapped['SessionGame'] = sa_orm.relationship(back_populates='players')
+    user_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('user.id'))
+    game_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('game.id'))
+    score: sa_orm.Mapped[int]
+    fails: sa_orm.Mapped[bool]
+
+    user: sa_orm.Mapped["User"] = sa_orm.relationship()
+    game: sa_orm.Mapped["Game"] = sa_orm.relationship(back_populates="players")
+
+
+class User(db):
+    __tablename__ = 'user'
+
+    id: sa_orm.Mapped[int] = sa_orm.mapped_column(primary_key=True)
+    chat_id: sa_orm.Mapped[int] = sa_orm.mapped_column(unique=True)
+    username: sa_orm.Mapped[str]
+
+

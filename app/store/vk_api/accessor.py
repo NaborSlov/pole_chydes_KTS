@@ -1,35 +1,33 @@
+import json
 import random
 import typing
-from typing import Optional
 
+import marshmallow_dataclass
 from aiohttp import TCPConnector
 from aiohttp.client import ClientSession
 
 from app.base.base_accessor import BaseAccessor
-from app.store.vk_api.dataclasses import Message, Update, UpdateObject
+from app.store.vk_api.dataclasses import Message, GetUpdates, SendMessage
 from app.store.vk_api.poller import Poller
 
 if typing.TYPE_CHECKING:
     from app.web.app import Application
 
-API_PATH = "https://api.vk.com/method/"
+API_PATH = "https://api.telegram.org/"
+schema_update = marshmallow_dataclass.class_schema(GetUpdates)
 
 
 class VkApiAccessor(BaseAccessor):
     def __init__(self, app: "Application", *args, **kwargs):
         super().__init__(app, *args, **kwargs)
         self.session: ClientSession | None = None
-        self.key: str | None = None
-        self.server: str | None = None
         self.poller: Poller | None = None
-        self.ts: int | None = None
+        self.offset: int = 0
+        self.token: str | None = None
 
     async def connect(self, app: "Application"):
+        self.token = self.app.config.bot.token
         self.session = ClientSession(connector=TCPConnector(verify_ssl=False))
-        try:
-            await self._get_long_poll_service()
-        except Exception as e:
-            self.logger.error("Exception", exc_info=e)
         self.poller = Poller(app.store)
         self.logger.info("start polling")
         await self.poller.start()
@@ -41,71 +39,49 @@ class VkApiAccessor(BaseAccessor):
             await self.poller.stop()
 
     @staticmethod
-    def _build_query(host: str, method: str, params: dict) -> str:
-        url = host + method + "?"
-        if "v" not in params:
-            params["v"] = "5.131"
+    def _build_query(host: str, method: str, token: str, params: dict) -> str:
+        url = host + token + "/" + method + "?"
         url += "&".join([f"{k}={v}" for k, v in params.items()])
         return url
 
-    async def _get_long_poll_service(self):
-        async with self.session.get(
-                self._build_query(
-                    host=API_PATH,
-                    method="groups.getLongPollServer",
-                    params={
-                        "group_id": self.app.config.bot.group_id,
-                        "access_token": self.app.config.bot.token,
-                    },
-                )
-        ) as resp:
-            data = (await resp.json())["response"]
-            self.logger.info(data)
-            self.key = data["key"]
-            self.server = data["server"]
-            self.ts = data["ts"]
-            self.logger.info(self.server)
-
     async def poll(self):
-        async with self.session.get(self._build_query(host=self.server,
-                                                      method="",
+        async with self.session.get(self._build_query(host=API_PATH,
+                                                      method="getUpdates",
+                                                      token=self.token,
                                                       params={
-                                                          "act": "a_check",
-                                                          "key": self.key,
-                                                          "ts": self.ts,
-                                                          "wait": 30,
+                                                          "offset": self.offset,
+                                                          "timeout": 30,
+                                                          "allowed_updates": json.dumps([]),
                                                       },
                                                       )) as resp:
             data = await resp.json()
             self.logger.info(data)
-            self.ts = data["ts"]
-            raw_updates = data.get("updates", [])
-            updates = []
 
-            for update in raw_updates:
-                updates.append(Update(type=update["type"],
-                                      object=UpdateObject(
-                                          id=update["object"]["id"],
-                                          user_id=update["object"]["user_id"],
-                                          body=update["object"]["body"],
-                                      ),
-                                      )
-                               )
+            try:
+                data_updates: GetUpdates = schema_update().load(data)
+                results = data_updates.result
+            except Exception as e:
+                results = []
+                self.logger.error(e)
 
-            return updates
+            for update in results:
+                if self.offset <= update.update_id:
+                    self.offset = update.update_id + 1
 
-    async def send_message(self, message: Message) -> None:
+            return data_updates.result
+
+    async def send_message(self, message: SendMessage) -> None:
+        params = {
+            "chat_id": message.chat_id,
+            "text": message.text,
+        }
+
         async with self.session.get(
                 self._build_query(
                     API_PATH,
-                    "messages.send",
-                    params={
-                        "user_id": message.user_id,
-                        "random_id": random.randint(1, 2 ** 32),
-                        "peer_id": "-" + str(self.app.config.bot.group_id),
-                        "message": message.text,
-                        "access_token": self.app.config.bot.token,
-                    },
+                    token=self.token,
+                    method="sendMessage",
+                    params=params,
                 )
         ) as resp:
             data = await resp.json()

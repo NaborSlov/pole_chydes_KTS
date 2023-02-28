@@ -3,7 +3,7 @@ from aiohttp.web import \
     Request as AiohttpRequest, \
     View as AiohttpView
 
-from app.store import Store
+from app.store import Store, setup_store
 from app.store.database.database import Database
 from app.web.config import setup_config, Config
 from app.web.logger import setup_logging
@@ -45,4 +45,5 @@ app = Application()
 def setup_app(config_path):
     setup_logging(app)
     setup_config(app, config_path)
+    setup_store(app)
     return app
