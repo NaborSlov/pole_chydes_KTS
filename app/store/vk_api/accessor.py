@@ -52,8 +52,7 @@ class VkApiAccessor(BaseAccessor):
                                                           "offset": self.offset,
                                                           "timeout": 30,
                                                           "allowed_updates": json.dumps([]),
-                                                      },
-                                                      )) as resp:
+                                                      },                                                      )) as resp:
             data = await resp.json()
             self.logger.info(data)
 

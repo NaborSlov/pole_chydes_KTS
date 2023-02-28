@@ -17,5 +17,5 @@ class AdminModel(DBBase):
 
     @classmethod
     def from_session(cls, session: Session | None) -> "AdminModel":
-        return cls(id=session["admin"]["id"], email=session["admin"]["username"])
+        return cls(id=session["admin"]["id"], username=session["admin"]["username"])
 
