@@ -1,0 +1,13 @@
+session:
+  key: key_aiohttp_session
+admin:
+  username:
+  password:
+database:
+  host:
+  port:
+  user:
+  password:
+  database:
+bot:
+  token: token_tg_bot

@@ -4,7 +4,6 @@ import sqlalchemy as sa
 import sqlalchemy.orm as sa_orm
 
 from app.base import DBBase
-from app.store.database import db
 
 
 class Question(DBBase):

@@ -10,4 +10,4 @@ database:
   password: game_pole
   database: test
 bot:
-  token: bot5813437930:AAH5kJSNkDdUd3Zox3lF0djNyI1sa0M4fT4
+  token: my_secret_token_tg
