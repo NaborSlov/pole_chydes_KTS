@@ -1,0 +1,13 @@
+session:
+  key: CaY5iCkYtN7DqXdiYK1BvmGrQuaSA4Tl4bEk9my0jc0=
+admin:
+  username: admin
+  password: admin
+database:
+  host: 0.0.0.0
+  port: 5430
+  user: game_pole
+  password: game_pole
+  database: test
+bot:
+  token: bot5813437930:AAH5kJSNkDdUd3Zox3lF0djNyI1sa0M4fT4

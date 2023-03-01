@@ -6,6 +6,15 @@ services:
     ports:
       - '5432:5432'
     environment:
-      POSTGRES_USER: test
-      POSTGRES_PASSWORD: test
+      POSTGRES_USER: game_pole
+      POSTGRES_PASSWORD: game_pole
+      POSTGRES_DB: game_pole
+
+  test_db:
+    image: postgres:latest
+    ports:
+      - '5430:5432'
+    environment:
+      POSTGRES_USER: game_pole
+      POSTGRES_PASSWORD: game_pole
       POSTGRES_DB: test

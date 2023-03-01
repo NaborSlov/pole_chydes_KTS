@@ -40,17 +40,17 @@ class Game(DBBase):
 class Player(DBBase):
     __tablename__ = 'player'
 
-    user_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('user.id'))
+    user_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('user_tg.id'))
     game_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('game.id'))
     score: sa_orm.Mapped[int]
     fails: sa_orm.Mapped[bool]
 
-    user: sa_orm.Mapped["User"] = sa_orm.relationship()
+    user: sa_orm.Mapped["UserTG"] = sa_orm.relationship()
     game: sa_orm.Mapped["Game"] = sa_orm.relationship(back_populates="players")
 
 
-class User(DBBase):
-    __tablename__ = 'user'
+class UserTG(DBBase):
+    __tablename__ = 'user_tg'
 
     chat_id: sa_orm.Mapped[int] = sa_orm.mapped_column(unique=True)
     username: sa_orm.Mapped[str]

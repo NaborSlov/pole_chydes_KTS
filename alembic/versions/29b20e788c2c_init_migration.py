@@ -37,7 +37,7 @@ def upgrade() -> None:
                     sa.PrimaryKeyConstraint('id')
                     )
 
-    op.create_table('user',
+    op.create_table('user_tg',
                     sa.Column('id', sa.Integer(), nullable=False),
                     sa.PrimaryKeyConstraint('id')
                     )

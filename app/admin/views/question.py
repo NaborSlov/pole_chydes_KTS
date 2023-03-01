@@ -1,35 +1,10 @@
-from aiohttp.web import HTTPForbidden
-from aiohttp_apispec import request_schema, response_schema, match_info_schema
-from aiohttp_session import new_session
+from aiohttp_apispec import response_schema, request_schema, match_info_schema
 
-from app.admin.schemes import AdminSchema, QuestionSchema, RetrieveQuestionSchema, PatchQuestionSchema
+from app.admin.schemes import QuestionSchema, RetrieveQuestionSchema, PatchQuestionSchema
 from app.web.app import View
 from app.web.mixins import AuthRequiredMixin
 from app.web.schemes import OkResponseSchema
 from app.web.utils import json_response
-
-
-class AdminLoginView(View):
-    @request_schema(AdminSchema)
-    @response_schema(OkResponseSchema, 200)
-    async def post(self):
-        data_user = self.data
-        admin = await self.store.admins.get_by_username(data_user.get('username'))
-
-        if admin is None or not admin.is_password_valid(data_user.get('password')):
-            raise HTTPForbidden
-
-        session = await new_session(request=self.request)
-        session["admin"] = {"id": admin.id,
-                            "username": admin.username}
-
-        return json_response(data=AdminSchema().dump(admin))
-
-
-class AdminCurrentView(View):
-    @response_schema(OkResponseSchema, 200)
-    async def get(self):
-        return json_response(data=AdminSchema().dump(self.request.admin))
 
 
 class ListQuestionView(AuthRequiredMixin, View):
@@ -46,7 +21,7 @@ class ListQuestionView(AuthRequiredMixin, View):
         return json_response(data=QuestionSchema().dump(new_question), status_code=201)
 
 
-class RetrieveQuestionView(View):
+class RetrieveQuestionView(AuthRequiredMixin, View):
     @match_info_schema(RetrieveQuestionSchema)
     @response_schema(OkResponseSchema, 200)
     async def get(self):
@@ -73,4 +48,3 @@ class RetrieveQuestionView(View):
         data = self.data
         question = await self.store.admins.update_question(id_question=int(quest_id), update_data=data)
         return json_response(data=QuestionSchema().dump(question))
-

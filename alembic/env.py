@@ -1,4 +1,5 @@
 import asyncio
+import os
 from logging.config import fileConfig
 
 from sqlalchemy import pool
@@ -10,6 +11,9 @@ from alembic import context
 from app.store.database import db
 from app.field_wonder import *
 from app.admin.models import *
+
+if not os.environ.get("ALEMBIC_URL"):
+    os.environ.setdefault("ALEMBIC_URL", "sqlalchemy.")
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -72,7 +76,7 @@ async def run_async_migrations() -> None:
 
     connectable = async_engine_from_config(
         config.get_section(config.config_ini_section, {}),
-        prefix="sqlalchemy.",
+        prefix=os.environ.get("ALEMBIC_URL"),
         poolclass=pool.NullPool,
     )
 

@@ -1,3 +1,3 @@
-from .models import Game, Question, Player, User, Round
+from .models import Game, Question, Player, UserTG, Round
 
-__all__ = ("Game", "Question", "Player", "User", "Round")
+__all__ = ("Game", "Question", "Player", "UserTG", "Round")
