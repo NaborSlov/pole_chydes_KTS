@@ -60,8 +60,7 @@ class AdminAccessor(BaseAccessor):
         query = select(Question).where(Question.id == id_question)
 
         async with self.app.database.session.begin() as session:
-            row = await session.execute(query)
-            result = row.scalar()
+            result = await session.scalar(query)
 
         return result
 
@@ -73,12 +72,11 @@ class AdminAccessor(BaseAccessor):
 
     async def update_question(self, id_question: int, update_data: dict) -> Question | None:
         query = update(Question). \
-            where(Question.id == id_question).\
-            values(**update_data).\
-            returning(Question.id == id_question)
+            where(Question.id == id_question). \
+            values(**update_data). \
+            returning(Question)
 
         async with self.app.database.session.begin() as session:
-            row = await session.execute(query)
-            result = row.scalar()
+            result = await session.scalar(query)
 
         return result

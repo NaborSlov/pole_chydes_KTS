@@ -2,7 +2,7 @@ from aiohttp.web import HTTPForbidden
 from aiohttp_apispec import request_schema, response_schema, match_info_schema
 from aiohttp_session import new_session
 
-from app.admin.schemes import AdminSchema, QuestionSchema, RetrieveQuestionSchema
+from app.admin.schemes import AdminSchema, QuestionSchema, RetrieveQuestionSchema, PatchQuestionSchema
 from app.web.app import View
 from app.web.mixins import AuthRequiredMixin
 from app.web.schemes import OkResponseSchema
@@ -52,6 +52,10 @@ class RetrieveQuestionView(View):
     async def get(self):
         quest_id = self.request.match_info['id']
         question = await self.store.admins.get_question_by_id(int(quest_id))
+
+        if not question:
+            return json_response(status_code=204)
+
         return json_response(QuestionSchema().dump(question))
 
     @match_info_schema(RetrieveQuestionSchema)
@@ -62,11 +66,11 @@ class RetrieveQuestionView(View):
         return json_response(status_code=204)
 
     @match_info_schema(RetrieveQuestionSchema)
-    @request_schema(QuestionSchema)
+    @request_schema(PatchQuestionSchema)
     @response_schema(OkResponseSchema, 200)
     async def patch(self):
         quest_id = self.request.match_info['id']
         data = self.data
-        question = await self.store.admins.update_question(quest_id, data)
+        question = await self.store.admins.update_question(id_question=int(quest_id), update_data=data)
         return json_response(data=QuestionSchema().dump(question))
 

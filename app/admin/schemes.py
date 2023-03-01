@@ -13,6 +13,10 @@ class QuestionSchema(Schema):
     answer = fields.Str(required=True)
 
 
+class PatchQuestionSchema(Schema):
+    description = fields.Str()
+    answer = fields.Str()
+
+
 class RetrieveQuestionSchema(Schema):
     id = fields.Int()
-
