@@ -27,8 +27,8 @@ class Game(DBBase):
     __tablename__ = 'game'
 
     chat: sa_orm.Mapped[int]
-    round_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('round.id'))
-    question_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('question.id'))
+    round_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('round.id'), nullable=True)
+    question_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('question.id'), nullable=True)
     answered: sa_orm.Mapped[str]
 
     round: sa_orm.Mapped['Round'] = sa_orm.relationship(back_populates='game')
@@ -39,8 +39,8 @@ class Game(DBBase):
 class Player(DBBase):
     __tablename__ = 'player'
 
-    user_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('user_tg.id'))
-    game_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('game.id'))
+    user_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('user_tg.id'), nullable=True)
+    game_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('game.id'), nullable=True)
     score: sa_orm.Mapped[int]
     fails: sa_orm.Mapped[bool]
 
@@ -51,7 +51,7 @@ class Player(DBBase):
 class UserTG(DBBase):
     __tablename__ = 'user_tg'
 
-    chat_id: sa_orm.Mapped[int] = sa_orm.mapped_column(unique=True)
+    chat_id: sa_orm.Mapped[int] = sa_orm.mapped_column(unique=True, nullable=True)
     username: sa_orm.Mapped[str]
 
 

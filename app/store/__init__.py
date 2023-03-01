@@ -11,10 +11,12 @@ class Store:
         from app.store.bot.manager import BotManager
         from app.store.vk_api.accessor import VkApiAccessor
         from app.store.admin.accessor import AdminAccessor
+        from app.store.field_wonder.accessor import FieldWonder
 
         self.bots_manager = BotManager(app)
         self.vk_api = VkApiAccessor(app)
         self.admins = AdminAccessor(app)
+        self.field = FieldWonder(app)
 
 
 def setup_store(app: "Application"):

@@ -1,8 +1,8 @@
-"""add colums
+"""init_migration1
 
-Revision ID: a3e1d9b46671
+Revision ID: 7395bb139a91
 Revises: 29b20e788c2c
-Create Date: 2023-03-01 20:25:27.407561
+Create Date: 2023-03-01 22:51:38.957846
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'a3e1d9b46671'
+revision = '7395bb139a91'
 down_revision = '29b20e788c2c'
 branch_labels = None
 depends_on = None
@@ -26,13 +26,13 @@ def upgrade() -> None:
     sa.UniqueConstraint('username')
     )
     op.add_column('game', sa.Column('chat', sa.Integer(), nullable=False))
-    op.add_column('game', sa.Column('round_id', sa.Integer(), nullable=False))
-    op.add_column('game', sa.Column('question_id', sa.Integer(), nullable=False))
+    op.add_column('game', sa.Column('round_id', sa.Integer(), nullable=True))
+    op.add_column('game', sa.Column('question_id', sa.Integer(), nullable=True))
     op.add_column('game', sa.Column('answered', sa.String(), nullable=False))
-    op.create_foreign_key(None, 'game', 'round', ['round_id'], ['id'])
     op.create_foreign_key(None, 'game', 'question', ['question_id'], ['id'])
-    op.add_column('player', sa.Column('user_id', sa.Integer(), nullable=False))
-    op.add_column('player', sa.Column('game_id', sa.Integer(), nullable=False))
+    op.create_foreign_key(None, 'game', 'round', ['round_id'], ['id'])
+    op.add_column('player', sa.Column('user_id', sa.Integer(), nullable=True))
+    op.add_column('player', sa.Column('game_id', sa.Integer(), nullable=True))
     op.add_column('player', sa.Column('score', sa.Integer(), nullable=False))
     op.add_column('player', sa.Column('fails', sa.Boolean(), nullable=False))
     op.create_foreign_key(None, 'player', 'game', ['game_id'], ['id'])
@@ -42,7 +42,7 @@ def upgrade() -> None:
     op.add_column('round', sa.Column('player_id', sa.Integer(), nullable=False))
     op.add_column('round', sa.Column('finished', sa.DateTime(), nullable=False))
     op.create_foreign_key(None, 'round', 'player', ['player_id'], ['id'])
-    op.add_column('user_tg', sa.Column('chat_id', sa.Integer(), nullable=False))
+    op.add_column('user_tg', sa.Column('chat_id', sa.Integer(), nullable=True))
     op.add_column('user_tg', sa.Column('username', sa.String(), nullable=False))
     op.create_unique_constraint(None, 'user_tg', ['chat_id'])
     # ### end Alembic commands ###
