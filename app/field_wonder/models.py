@@ -16,9 +16,9 @@ class Question(DBBase):
 class Round(DBBase):
     __tablename__ = 'round'
 
-    player_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('player.id'))
+    player_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('player.id'), nullable=False)
     game: sa_orm.Mapped['Game'] = sa_orm.relationship(back_populates='round')
-    finished: sa_orm.Mapped[datetime]
+    finished: sa_orm.Mapped[datetime] = sa_orm.mapped_column(nullable=False)
 
     player: sa_orm.Mapped['Player'] = sa_orm.relationship()
 

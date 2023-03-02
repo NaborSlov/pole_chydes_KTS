@@ -14,7 +14,7 @@ class Store:
         from app.store.field_wonder.accessor import FieldWonder
 
         self.bots_manager = BotManager(app)
-        self.vk_api = VkApiAccessor(app)
+        self.tg_api = VkApiAccessor(app)
         self.admins = AdminAccessor(app)
         self.field = FieldWonder(app)
 

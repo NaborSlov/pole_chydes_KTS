@@ -40,8 +40,8 @@ def server(load_alembic):
     app.on_startup.clear()
     app.on_shutdown.clear()
 
-    app.store.vk_api = AsyncMock()
-    app.store.vk_api.send_message = AsyncMock()
+    app.store.tg_api = AsyncMock()
+    app.store.tg_api.send_message = AsyncMock()
 
     app.database = Database(app)
     app.on_startup.append(app.database.connect)

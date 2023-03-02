@@ -1,5 +1,4 @@
 import json
-import random
 import typing
 
 import marshmallow_dataclass
@@ -7,8 +6,11 @@ from aiohttp import TCPConnector
 from aiohttp.client import ClientSession
 
 from app.base.base_accessor import BaseAccessor
-from app.store.vk_api.dataclasses import Message, GetUpdates, SendMessage
+from app.store.vk_api.dataclasses import GetUpdates, SendMessage, InlineKeyboardMarkup, InlineKeyboardButton, \
+    KeyboardButton, ReplyKeyboardMarkup
 from app.store.vk_api.poller import Poller
+
+from dataclasses import asdict, astuple
 
 if typing.TYPE_CHECKING:
     from app.web.app import Application
@@ -39,22 +41,25 @@ class VkApiAccessor(BaseAccessor):
             await self.poller.stop()
 
     @staticmethod
-    def _build_query(host: str, method: str, token: str, params: dict) -> str:
+    def _build_query(host: str, method: str, token: str, query_params: dict = None) -> str:
         url = host + token + "/" + method + "?"
-        url += "&".join([f"{k}={v}" for k, v in params.items()])
+
+        if query_params:
+            url += "&".join([f"{k}={v}" for k, v in query_params.items()])
+
         return url
 
     async def poll(self):
         async with self.session.get(self._build_query(host=API_PATH,
                                                       method="getUpdates",
                                                       token=self.token,
-                                                      params={
+                                                      query_params={
                                                           "offset": self.offset,
                                                           "timeout": 30,
-                                                          "allowed_updates": json.dumps([]),
-                                                      },                                                      )) as resp:
+                                                          "allowed_updates": [],
+                                                      }, )) as resp:
             data = await resp.json()
-            self.logger.info(data)
+            self.logger.info(f"poll_result:{data}")
 
             try:
                 data_updates: GetUpdates = schema_update().load(data)
@@ -70,18 +75,55 @@ class VkApiAccessor(BaseAccessor):
             return data_updates.result
 
     async def send_message(self, message: SendMessage) -> None:
-        params = {
-            "chat_id": message.chat_id,
-            "text": message.text,
-        }
+        params = {key: json.dumps(val, ensure_ascii=False) for key, val in asdict(message).items()}
 
         async with self.session.get(
                 self._build_query(
                     API_PATH,
                     token=self.token,
                     method="sendMessage",
-                    params=params,
-                )
+                    query_params=params
+                ),
+        ) as resp:
+            data = await resp.json()
+            self.logger.info(data)
+
+    async def send_inline_button_start(self, chat_id):
+        button = InlineKeyboardButton(text="Начать игру", callback_data="/create_poll")
+
+        reply_markup = InlineKeyboardMarkup(inline_keyboard=[[asdict(button)]])
+
+        message = SendMessage(chat_id=chat_id,
+                              text="Для того чтобы начать игру нажмите на",
+                              reply_markup=asdict(reply_markup))
+
+        await self.send_message(message)
+
+    async def send_reply_button_start(self, chat_id):
+        button = KeyboardButton(text="Начать игру")
+        reply_markup = ReplyKeyboardMarkup(keyboard=[[asdict(button)]])
+
+        message = SendMessage(chat_id=chat_id,
+                              text="",
+                              reply_markup=asdict(reply_markup))
+
+        await self.send_message(message)
+
+    async def send_poll_start(self, chat_id: int):
+        poll_params = {"chat_id": chat_id,
+                       "question": "Будете ли вы играть?",
+                       "options": ["Да", "Нет"],
+                       "is_anonymous": False,
+                       }
+        params = {key: json.dumps(val, ensure_ascii=False) for key, val in poll_params.items()}
+
+        async with self.session.get(
+                self._build_query(
+                    API_PATH,
+                    token=self.token,
+                    method="sendPoll",
+                    query_params=params
+                ),
         ) as resp:
             data = await resp.json()
             self.logger.info(data)
