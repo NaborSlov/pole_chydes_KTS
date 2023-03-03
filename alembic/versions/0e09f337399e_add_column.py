@@ -1,8 +1,8 @@
-"""init_migration1
+"""add column
 
-Revision ID: 7395bb139a91
+Revision ID: 0e09f337399e
 Revises: 29b20e788c2c
-Create Date: 2023-03-01 22:51:38.957846
+Create Date: 2023-03-03 23:00:33.689555
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '7395bb139a91'
+revision = '0e09f337399e'
 down_revision = '29b20e788c2c'
 branch_labels = None
 depends_on = None
@@ -25,22 +25,22 @@ def upgrade() -> None:
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('username')
     )
-    op.add_column('game', sa.Column('chat', sa.Integer(), nullable=False))
     op.add_column('game', sa.Column('round_id', sa.Integer(), nullable=True))
     op.add_column('game', sa.Column('question_id', sa.Integer(), nullable=True))
     op.add_column('game', sa.Column('answered', sa.String(), nullable=False))
-    op.create_foreign_key(None, 'game', 'question', ['question_id'], ['id'])
+    op.add_column('game', sa.Column('poll_id', sa.BigInteger(), nullable=False))
     op.create_foreign_key(None, 'game', 'round', ['round_id'], ['id'])
+    op.create_foreign_key(None, 'game', 'question', ['question_id'], ['id'])
     op.add_column('player', sa.Column('user_id', sa.Integer(), nullable=True))
     op.add_column('player', sa.Column('game_id', sa.Integer(), nullable=True))
     op.add_column('player', sa.Column('score', sa.Integer(), nullable=False))
     op.add_column('player', sa.Column('fails', sa.Boolean(), nullable=False))
-    op.create_foreign_key(None, 'player', 'game', ['game_id'], ['id'])
     op.create_foreign_key(None, 'player', 'user_tg', ['user_id'], ['id'])
+    op.create_foreign_key(None, 'player', 'game', ['game_id'], ['id'])
     op.add_column('question', sa.Column('description', sa.String(), nullable=False))
     op.add_column('question', sa.Column('answer', sa.String(), nullable=False))
-    op.add_column('round', sa.Column('player_id', sa.Integer(), nullable=False))
-    op.add_column('round', sa.Column('finished', sa.DateTime(), nullable=False))
+    op.add_column('round', sa.Column('player_id', sa.Integer(), nullable=True))
+    op.add_column('round', sa.Column('finished', sa.DateTime(), nullable=True))
     op.create_foreign_key(None, 'round', 'player', ['player_id'], ['id'])
     op.add_column('user_tg', sa.Column('chat_id', sa.Integer(), nullable=True))
     op.add_column('user_tg', sa.Column('username', sa.String(), nullable=False))
@@ -66,9 +66,9 @@ def downgrade() -> None:
     op.drop_column('player', 'user_id')
     op.drop_constraint(None, 'game', type_='foreignkey')
     op.drop_constraint(None, 'game', type_='foreignkey')
+    op.drop_column('game', 'poll_id')
     op.drop_column('game', 'answered')
     op.drop_column('game', 'question_id')
     op.drop_column('game', 'round_id')
-    op.drop_column('game', 'chat')
     op.drop_table('admins')
     # ### end Alembic commands ###

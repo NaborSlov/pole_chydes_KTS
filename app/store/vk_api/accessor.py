@@ -1,16 +1,16 @@
 import json
 import typing
+from dataclasses import asdict
 
 import marshmallow_dataclass
 from aiohttp import TCPConnector
 from aiohttp.client import ClientSession
 
 from app.base.base_accessor import BaseAccessor
+from app.field_wonder import UserTG
 from app.store.vk_api.dataclasses import GetUpdates, SendMessage, InlineKeyboardMarkup, InlineKeyboardButton, \
-    KeyboardButton, ReplyKeyboardMarkup
+    KeyboardButton, ReplyKeyboardMarkup, SendPoll
 from app.store.vk_api.poller import Poller
-
-from dataclasses import asdict, astuple
 
 if typing.TYPE_CHECKING:
     from app.web.app import Application
@@ -86,14 +86,14 @@ class VkApiAccessor(BaseAccessor):
                 ),
         ) as resp:
             data = await resp.json()
-            self.logger.info(data)
+            self.logger.info(f"send_message:{data}")
 
-    async def send_inline_button_start(self, chat_id):
+    async def send_inline_button_start(self, user: UserTG):
         button = InlineKeyboardButton(text="Начать игру", callback_data="/create_poll")
 
         reply_markup = InlineKeyboardMarkup(inline_keyboard=[[asdict(button)]])
 
-        message = SendMessage(chat_id=chat_id,
+        message = SendMessage(chat_id=user.chat_id,
                               text="Для того чтобы начать игру нажмите на",
                               reply_markup=asdict(reply_markup))
 
@@ -109,13 +109,12 @@ class VkApiAccessor(BaseAccessor):
 
         await self.send_message(message)
 
-    async def send_poll_start(self, chat_id: int):
-        poll_params = {"chat_id": chat_id,
-                       "question": "Будете ли вы играть?",
-                       "options": ["Да", "Нет"],
-                       "is_anonymous": False,
-                       }
-        params = {key: json.dumps(val, ensure_ascii=False) for key, val in poll_params.items()}
+    async def send_poll_start(self, user: UserTG):
+        poll_params = SendPoll(chat_id=user.chat_id,
+                               question="Будете ли вы играть?",
+                               options=["Да", "Нет"])
+
+        params = {key: json.dumps(val, ensure_ascii=False) for key, val in asdict(poll_params).items()}
 
         async with self.session.get(
                 self._build_query(
@@ -126,4 +125,5 @@ class VkApiAccessor(BaseAccessor):
                 ),
         ) as resp:
             data = await resp.json()
-            self.logger.info(data)
+            self.logger.info(f"send_poll_start:{data}")
+            return data['result']['poll']['id']

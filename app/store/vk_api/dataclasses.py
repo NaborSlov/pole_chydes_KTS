@@ -13,6 +13,17 @@ class Updates:
     update_id: int
     message: "Message" = None
     callback_query: "CallbackQuery" = None
+    poll_answer: "PollAnswer" = None
+
+    class Meta:
+        unknown = marshmallow.EXCLUDE
+
+
+@dataclass
+class PollAnswer:
+    user: "From"
+    poll_id: int
+    option_ids: list[int] = field(default_factory=list)
 
     class Meta:
         unknown = marshmallow.EXCLUDE
@@ -34,7 +45,7 @@ class Message:
     from_: "From" = field(metadata={"data_key": "from"})
     chat: "Chat"
     date: int
-    text: str
+    text: str = ""
 
     class Meta:
         unknown = marshmallow.EXCLUDE
@@ -86,3 +97,12 @@ class ReplyKeyboardMarkup:
 @dataclass
 class KeyboardButton:
     text: str
+
+
+@dataclass
+class SendPoll:
+    chat_id: int
+    question: str
+    options: list[str] = field(default_factory=list)
+    is_anonymous: bool = False
+    open_period: int = 180
