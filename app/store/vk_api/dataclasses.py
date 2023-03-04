@@ -69,8 +69,6 @@ class Chat:
     type: str = ""
     title: str = ""
 
-
-
     class Meta:
         unknown = marshmallow.EXCLUDE
 
@@ -84,7 +82,7 @@ class SendMessage:
 
 @dataclass
 class SendPoll:
-    chat_id: int
+    chat_id: str
     question: str
     options: str
     is_anonymous: bool = False

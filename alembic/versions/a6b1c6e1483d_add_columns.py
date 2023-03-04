@@ -1,8 +1,8 @@
-"""add column
+"""add columns
 
-Revision ID: 0e09f337399e
+Revision ID: a6b1c6e1483d
 Revises: 29b20e788c2c
-Create Date: 2023-03-03 23:00:33.689555
+Create Date: 2023-03-04 22:23:04.106967
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '0e09f337399e'
+revision = 'a6b1c6e1483d'
 down_revision = '29b20e788c2c'
 branch_labels = None
 depends_on = None
@@ -28,15 +28,15 @@ def upgrade() -> None:
     op.add_column('game', sa.Column('round_id', sa.Integer(), nullable=True))
     op.add_column('game', sa.Column('question_id', sa.Integer(), nullable=True))
     op.add_column('game', sa.Column('answered', sa.String(), nullable=False))
-    op.add_column('game', sa.Column('poll_id', sa.BigInteger(), nullable=False))
-    op.create_foreign_key(None, 'game', 'round', ['round_id'], ['id'])
+    op.add_column('game', sa.Column('started', sa.Boolean(), nullable=False))
     op.create_foreign_key(None, 'game', 'question', ['question_id'], ['id'])
+    op.create_foreign_key(None, 'game', 'round', ['round_id'], ['id'])
     op.add_column('player', sa.Column('user_id', sa.Integer(), nullable=True))
     op.add_column('player', sa.Column('game_id', sa.Integer(), nullable=True))
     op.add_column('player', sa.Column('score', sa.Integer(), nullable=False))
     op.add_column('player', sa.Column('fails', sa.Boolean(), nullable=False))
-    op.create_foreign_key(None, 'player', 'user_tg', ['user_id'], ['id'])
     op.create_foreign_key(None, 'player', 'game', ['game_id'], ['id'])
+    op.create_foreign_key(None, 'player', 'user_tg', ['user_id'], ['id'])
     op.add_column('question', sa.Column('description', sa.String(), nullable=False))
     op.add_column('question', sa.Column('answer', sa.String(), nullable=False))
     op.add_column('round', sa.Column('player_id', sa.Integer(), nullable=True))
@@ -66,7 +66,7 @@ def downgrade() -> None:
     op.drop_column('player', 'user_id')
     op.drop_constraint(None, 'game', type_='foreignkey')
     op.drop_constraint(None, 'game', type_='foreignkey')
-    op.drop_column('game', 'poll_id')
+    op.drop_column('game', 'started')
     op.drop_column('game', 'answered')
     op.drop_column('game', 'question_id')
     op.drop_column('game', 'round_id')

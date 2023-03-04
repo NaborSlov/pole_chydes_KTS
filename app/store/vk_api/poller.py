@@ -22,4 +22,7 @@ class Poller:
     async def poll(self):
         while self.is_running:
             updates = await self.store.tg_api.poll()
-            await self.store.bots_manager.handle_updates(updates)
+            try:
+                await self.store.bots_manager.handle_updates(updates)
+            except Exception as e:
+                print(e)

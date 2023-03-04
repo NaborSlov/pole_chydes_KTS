@@ -7,7 +7,7 @@ from aiohttp import TCPConnector
 from aiohttp.client import ClientSession
 
 from app.base.base_accessor import BaseAccessor
-from app.field_wonder import UserTG
+from app.field_wonder import UserTG, Game
 from app.store.vk_api.dataclasses import GetUpdates, SendMessage, SendPoll
 from app.store.vk_api.poller import Poller
 
@@ -90,7 +90,7 @@ class VkApiAccessor(BaseAccessor):
     async def send_inline_button_start(self, user: UserTG):
         reply_markup = {"inline_keyboard": [
             [
-                {"text": "Начать игру",
+                {"text": f"Начать игру",
                  "callback_data": "/create_poll"}
             ]
         ]}
@@ -101,22 +101,19 @@ class VkApiAccessor(BaseAccessor):
 
         await self.send_message(message)
 
-    async def send_poll_start(self, user: UserTG):
-        poll_params = SendPoll(chat_id=user.chat_id,
-                               question="Будете ли вы играть?",
-                               options='["Да", "Нет"]')
+    async def send_inline_button_poll(self, game: Game, chat_id: int):
+        reply_markup = {"inline_keyboard": [
+            [
+                {"text": f"Да",
+                 "callback_data": f"poll_game@{game.id}"},
+                {"text": f"Нет",
+                 "callback_data": f"answer_no"}
 
-        params = asdict(poll_params)
+            ]
+        ]}
 
-        async with self.session.get(
-                self._build_query(
-                    API_PATH,
-                    token=self.token,
-                    method="sendPoll",
-                    query_params=params
-                ),
-        ) as resp:
-            data = await resp.json()
-            self.logger.info(f"send_poll_start:{data}")
-            return data['result']['poll']['id']
+        message = SendMessage(chat_id=chat_id,
+                              text=f"Хотите ли начать игру",
+                              reply_markup=json.dumps(reply_markup, ensure_ascii=False))
 
+        await self.send_message(message)

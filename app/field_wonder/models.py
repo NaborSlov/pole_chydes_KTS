@@ -29,7 +29,7 @@ class Game(DBBase):
     round_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('round.id'), nullable=True)
     question_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('question.id'), nullable=True)
     answered: sa_orm.Mapped[str]
-    poll_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.BigInteger())
+    started: sa_orm.Mapped[bool] = sa_orm.mapped_column(default=False)
 
     round: sa_orm.Mapped['Round'] = sa_orm.relationship(back_populates='game')
     question: sa_orm.Mapped['Question'] = sa_orm.relationship()
@@ -53,5 +53,3 @@ class UserTG(DBBase):
 
     chat_id: sa_orm.Mapped[int] = sa_orm.mapped_column(unique=True, nullable=True)
     username: sa_orm.Mapped[str]
-
-
