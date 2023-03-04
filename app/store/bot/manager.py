@@ -31,9 +31,15 @@ class BotManager:
             elif update.poll_answer and update.poll_answer.option_ids[0] == 0:
                 user = await self.app.store.field.get_or_create_user_tg(chat_id=update.poll_answer.user.id,
                                                                         username=update.poll_answer.user.username)
-                await self.app.store.field.add_player_in_game(user, poll_id=update.poll_answer.poll_id)
+                game = await self.app.store.field.get_game_by_poll_id(poll_id=update.poll_answer.poll_id)
 
-                message = SendMessage(chat_id=user.chat_id, text="Вы в игре")
-                await self.app.store.tg_api.send_message(message)
-
-
+                if any(map(lambda x: x.user_id == user.id, game.players)):
+                    message = SendMessage(chat_id=user.chat_id, text="Вы уже в игре")
+                    await self.app.store.tg_api.send_message(message)
+                else:
+                    if len(game.players) + 1 >= 3:
+                        await self.app.store.tg_api.stop_poll()
+                    else:
+                        player = await self.app.store.field.create_player(user=user, game=game)
+                        message = SendMessage(chat_id=user.chat_id, text=f"Вы в игре {player.user.username}")
+                        await self.app.store.tg_api.send_message(message)

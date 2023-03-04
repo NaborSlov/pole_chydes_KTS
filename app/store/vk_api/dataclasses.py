@@ -66,6 +66,10 @@ class Chat:
     id: int
     first_name: str = ""
     username: str = ""
+    type: str = ""
+    title: str = ""
+
+
 
     class Meta:
         unknown = marshmallow.EXCLUDE
@@ -75,34 +79,13 @@ class Chat:
 class SendMessage:
     chat_id: int
     text: str
-    reply_markup: dict = field(default_factory=dict)
-
-
-@dataclass
-class InlineKeyboardButton:
-    text: str
-    callback_data: str
-
-
-@dataclass
-class InlineKeyboardMarkup:
-    inline_keyboard: list[list] = field(default_factory=list[list])
-
-
-@dataclass
-class ReplyKeyboardMarkup:
-    keyboard: list[list] = field(default_factory=list[list])
-
-
-@dataclass
-class KeyboardButton:
-    text: str
+    reply_markup: str = ""
 
 
 @dataclass
 class SendPoll:
     chat_id: int
     question: str
-    options: list[str] = field(default_factory=list)
+    options: str
     is_anonymous: bool = False
     open_period: int = 180

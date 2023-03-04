@@ -34,24 +34,31 @@ class FieldWonder(BaseAccessor):
 
         return new_user
 
-    async def create_player(self, user_id: int) -> Player:
+    async def create_player(self, user: UserTG, game: Game) -> Player:
         async with self.app.database.session.begin() as session:
-            player = Player(user_id=user_id)
+            player = Player(user=user, game=game)
             session.add(player)
             await session.commit()
 
         return player
+
+    async def get_game_by_poll_id(self, poll_id: int) -> Game:
+        async with self.app.database.session.begin() as session:
+            game = await session.scalar(select(Game).options(selectinload(Game.players),
+                                                             selectinload(Game.question),
+                                                             selectinload(Game.round)).where(Game.poll_id == poll_id))
+            return game
 
     async def get_all_questions(self):
         async with self.app.database.session.begin() as session:
             rows = await session.scalars(select(Question))
             return rows.all()
 
-    async def create_game(self, user: UserTG, poll_id: int) -> Game:
-        player = await self.create_player(user.id)
+    async def create_game(self, user: UserTG, poll_id: int) -> None:
         questions = await self.get_all_questions()
         question = random.choice(questions)
         async with self.app.database.session.begin() as session:
+            player = Player(user=user)
             round_game = Round()
             new_game = Game(poll_id=poll_id,
                             round=round_game,
@@ -61,20 +68,4 @@ class FieldWonder(BaseAccessor):
 
             session.add(new_game)
 
-            await session.commit()
-
-        return new_game
-
-    async def add_player_in_game(self, user, poll_id: int):
-        async with self.app.database.session.begin() as session:
-            game = await session.scalar(
-                select(Game).options(selectinload(Game.players).selectinload(Player.user)).where(
-                    Game.poll_id == poll_id))
-
-            for player in game.players:
-                if player.user.chat_id == user.chat_id:
-                    return None
-
-            player = Player(user=user, game=game)
-            session.add(player)
             await session.commit()

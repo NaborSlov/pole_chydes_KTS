@@ -8,8 +8,7 @@ from aiohttp.client import ClientSession
 
 from app.base.base_accessor import BaseAccessor
 from app.field_wonder import UserTG
-from app.store.vk_api.dataclasses import GetUpdates, SendMessage, InlineKeyboardMarkup, InlineKeyboardButton, \
-    KeyboardButton, ReplyKeyboardMarkup, SendPoll
+from app.store.vk_api.dataclasses import GetUpdates, SendMessage, SendPoll
 from app.store.vk_api.poller import Poller
 
 if typing.TYPE_CHECKING:
@@ -75,7 +74,7 @@ class VkApiAccessor(BaseAccessor):
             return data_updates.result
 
     async def send_message(self, message: SendMessage) -> None:
-        params = {key: json.dumps(val, ensure_ascii=False) for key, val in asdict(message).items()}
+        params = asdict(message)
 
         async with self.session.get(
                 self._build_query(
@@ -89,32 +88,25 @@ class VkApiAccessor(BaseAccessor):
             self.logger.info(f"send_message:{data}")
 
     async def send_inline_button_start(self, user: UserTG):
-        button = InlineKeyboardButton(text="Начать игру", callback_data="/create_poll")
-
-        reply_markup = InlineKeyboardMarkup(inline_keyboard=[[asdict(button)]])
+        reply_markup = {"inline_keyboard": [
+            [
+                {"text": "Начать игру",
+                 "callback_data": "/create_poll"}
+            ]
+        ]}
 
         message = SendMessage(chat_id=user.chat_id,
                               text="Для того чтобы начать игру нажмите на",
-                              reply_markup=asdict(reply_markup))
-
-        await self.send_message(message)
-
-    async def send_reply_button_start(self, chat_id):
-        button = KeyboardButton(text="Начать игру")
-        reply_markup = ReplyKeyboardMarkup(keyboard=[[asdict(button)]])
-
-        message = SendMessage(chat_id=chat_id,
-                              text="",
-                              reply_markup=asdict(reply_markup))
+                              reply_markup=json.dumps(reply_markup, ensure_ascii=False))
 
         await self.send_message(message)
 
     async def send_poll_start(self, user: UserTG):
         poll_params = SendPoll(chat_id=user.chat_id,
                                question="Будете ли вы играть?",
-                               options=["Да", "Нет"])
+                               options='["Да", "Нет"]')
 
-        params = {key: json.dumps(val, ensure_ascii=False) for key, val in asdict(poll_params).items()}
+        params = asdict(poll_params)
 
         async with self.session.get(
                 self._build_query(
@@ -127,3 +119,4 @@ class VkApiAccessor(BaseAccessor):
             data = await resp.json()
             self.logger.info(f"send_poll_start:{data}")
             return data['result']['poll']['id']
+
