@@ -54,7 +54,7 @@ class FieldWonder(BaseAccessor):
 
     async def get_game_by_id(self, id_game: int) -> Game:
         async with self.app.database.session.begin() as session:
-            game = await session.scalar(select(Game).options(selectinload(Game.players),
+            game = await session.scalar(select(Game).options(selectinload(Game.players).selectinload(Player.user),
                                                              selectinload(Game.question),
                                                              selectinload(Game.round)).where(Game.id == id_game))
             return game
@@ -121,11 +121,10 @@ class FieldWonder(BaseAccessor):
     async def get_player_by_user(self, user: UserTG):
         query = select(Player).where(Player.user_id == user.id)
         async with self.app.database.session.begin() as session:
-            row = await session.scalar(query)
-            return row
+            row = await session.scalars(query)
+            return row.all()
 
-    async def update_data(self, *model):
+    async def update_data(self, model):
         async with self.app.database.session.begin() as session:
-            for item in model:
-                session.add(item)
+            session.add(model)
             await session.commit()
