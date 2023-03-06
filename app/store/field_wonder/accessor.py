@@ -53,10 +53,14 @@ class FieldWonder(BaseAccessor):
         return player
 
     async def get_game_by_id(self, id_game: int) -> Game:
+        query = select(Game).options(selectinload(Game.players).selectinload(Player.user),
+                                     selectinload(Game.question),
+                                     selectinload(Game.round).selectinload(
+                                         Round.player).selectinload(Player.user)).where(
+            Game.id == id_game)
+
         async with self.app.database.session.begin() as session:
-            game = await session.scalar(select(Game).options(selectinload(Game.players).selectinload(Player.user),
-                                                             selectinload(Game.question),
-                                                             selectinload(Game.round)).where(Game.id == id_game))
+            game = await session.scalar(query)
             return game
 
     async def get_all_questions(self):
@@ -83,40 +87,23 @@ class FieldWonder(BaseAccessor):
 
     async def start_game(self, game) -> Game:
         async with self.app.database.session.begin() as session:
-            game = await session.scalar(
-                select(Game).where(Game.id == game.id).options(selectinload(Game.players).selectinload(Player.user),
-                                                               selectinload(Game.question)))
             if game.started:
                 return game
 
             player = random.choice(game.players)
-            round_game = await session.execute(update(Round).where(Round.id == game.round_id).values(
+            await session.scalar(update(Round).where(Round.id == game.round_id).values(
                 player_id=player.id,
                 finished=datetime.datetime.now() + datetime.timedelta(minutes=5)
-            ).returning(Round))
+            ))
 
-            game.started = True
+            game = await session.scalar(
+                update(Game).where(Game.id == game.id).values(started=True).returning(Game).options(
+                    selectinload(Game.players).selectinload(Player.user),
+                    selectinload(Game.question),
+                    selectinload(Game.round).selectinload(
+                        Round.player).selectinload(Player.user)))
             await session.commit()
-
-        messages_question = []
-        for player in game.players:
-            messages_question.append(
-                SendMessage(chat_id=player.user.chat_id, text=f"Вопрос:{game.question.description}"))
-
-        messages_answer = []
-        for player in game.players:
-            messages_answer.append(
-                SendMessage(chat_id=player.user.chat_id, text=f"Ответ:{game.answered}"))
-
-        res_quests = await asyncio.gather(
-            *[self.app.store.tg_api.send_message(message) for message in messages_question])
-        res_answer = await asyncio.gather(
-            *[self.app.store.tg_api.send_message(message) for message in messages_answer])
-
-        player_round = next(filter(lambda x: x.id == round_game.scalar().player_id, game.players))
-
-        message = SendMessage(chat_id=player_round.user.chat_id, text="Ваш ход")
-        await self.app.store.tg_api.send_message(message)
+            return game
 
     async def get_player_by_user(self, user: UserTG):
         query = select(Player).where(Player.user_id == user.id)

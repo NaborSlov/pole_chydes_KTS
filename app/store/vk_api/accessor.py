@@ -1,3 +1,4 @@
+import asyncio
 import json
 import typing
 from dataclasses import asdict
@@ -7,7 +8,7 @@ from aiohttp import TCPConnector
 from aiohttp.client import ClientSession
 
 from app.base.base_accessor import BaseAccessor
-from app.field_wonder import UserTG, Game
+from app.field_wonder import UserTG, Game, Player
 from app.store.vk_api.dataclasses import GetUpdates, SendMessage, SendPoll
 from app.store.vk_api.poller import Poller
 
@@ -117,3 +118,5 @@ class VkApiAccessor(BaseAccessor):
                               reply_markup=json.dumps(reply_markup, ensure_ascii=False))
 
         await self.send_message(message)
+
+
