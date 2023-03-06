@@ -92,7 +92,7 @@ class VkApiAccessor(BaseAccessor):
         reply_markup = {"inline_keyboard": [
             [
                 {"text": f"Начать игру",
-                 "callback_data": "/create_poll"}
+                 "callback_data": "create_poll@null"}
             ]
         ]}
 
@@ -108,7 +108,7 @@ class VkApiAccessor(BaseAccessor):
                 {"text": f"Да",
                  "callback_data": f"poll_game@{game.id}"},
                 {"text": f"Нет",
-                 "callback_data": f"answer_no"}
+                 "callback_data": f"no@null"}
 
             ]
         ]}
@@ -119,4 +119,16 @@ class VkApiAccessor(BaseAccessor):
 
         await self.send_message(message)
 
+    async def send_you_turn(self, chat_id: int, game: Game):
+        reply_markup = {"inline_keyboard": [
+            [
+                {"text": f"Выйти из игры",
+                 "callback_data": f"exit_game@{game.id}"},
+            ]
+        ]}
 
+        message = SendMessage(chat_id=chat_id,
+                              text="Ваш ход",
+                              reply_markup=json.dumps(reply_markup, ensure_ascii=False))
+
+        await self.send_message(message)

@@ -1,8 +1,8 @@
 """add columns
 
-Revision ID: b57a202a0d04
+Revision ID: 29d2edac8e69
 Revises: 29b20e788c2c
-Create Date: 2023-03-05 16:38:31.834465
+Create Date: 2023-03-06 23:49:38.594865
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'b57a202a0d04'
+revision = '29d2edac8e69'
 down_revision = '29b20e788c2c'
 branch_labels = None
 depends_on = None
@@ -29,14 +29,14 @@ def upgrade() -> None:
     op.add_column('game', sa.Column('question_id', sa.Integer(), nullable=True))
     op.add_column('game', sa.Column('answered', sa.String(), nullable=False))
     op.add_column('game', sa.Column('started', sa.Boolean(), nullable=False))
-    op.create_foreign_key(None, 'game', 'round', ['round_id'], ['id'])
     op.create_foreign_key(None, 'game', 'question', ['question_id'], ['id'])
+    op.create_foreign_key(None, 'game', 'round', ['round_id'], ['id'])
     op.add_column('player', sa.Column('user_id', sa.Integer(), nullable=True))
     op.add_column('player', sa.Column('game_id', sa.Integer(), nullable=True))
     op.add_column('player', sa.Column('score', sa.Integer(), nullable=False))
     op.add_column('player', sa.Column('fails', sa.Boolean(), nullable=False))
-    op.create_foreign_key(None, 'player', 'user_tg', ['user_id'], ['id'])
     op.create_foreign_key(None, 'player', 'game', ['game_id'], ['id'])
+    op.create_foreign_key(None, 'player', 'user_tg', ['user_id'], ['id'])
     op.add_column('question', sa.Column('description', sa.String(), nullable=False))
     op.add_column('question', sa.Column('answer', sa.String(), nullable=False))
     op.add_column('round', sa.Column('player_id', sa.Integer(), nullable=True))

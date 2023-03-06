@@ -2,7 +2,7 @@ import asyncio
 import datetime
 import random
 
-from sqlalchemy import select, update
+from sqlalchemy import select, update, delete
 from sqlalchemy.orm import selectinload
 
 from app.base.base_accessor import BaseAccessor
@@ -76,7 +76,7 @@ class FieldWonder(BaseAccessor):
             round_game = Round()
             new_game = Game(round=round_game,
                             question=question,
-                            answered="-" * len(question.answer),
+                            answered="_" * len(question.answer),
                             players=[player])
 
             session.add(new_game)
@@ -91,7 +91,7 @@ class FieldWonder(BaseAccessor):
                 return game
 
             player = random.choice(game.players)
-            await session.scalar(update(Round).where(Round.id == game.round_id).values(
+            await session.execute(update(Round).where(Round.id == game.round_id).values(
                 player_id=player.id,
                 finished=datetime.datetime.now() + datetime.timedelta(minutes=5)
             ))
@@ -114,4 +114,11 @@ class FieldWonder(BaseAccessor):
     async def update_data(self, model):
         async with self.app.database.session.begin() as session:
             session.add(model)
+            await session.commit()
+
+    async def exit_player_game(self, game: Game, user: UserTG):
+        async with self.app.database.session.begin() as session:
+            await session.execute(update(Round).where(Round.game == game).values(player_id=None))
+            await session.execute(
+                delete(Player).where(Player.user_id == user.id, Player.game_id == game.id))
             await session.commit()
