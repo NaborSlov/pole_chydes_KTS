@@ -17,6 +17,9 @@ class BotManager:
         self.logger = getLogger("handler")
 
     async def send_questions_and_answered(self, game: Game):
+        """
+        Отправка вопроса и уже отвеченных букв всем участникам игры
+        """
         messages_question = []
         for player in game.players:
             messages_question.append(
@@ -25,16 +28,24 @@ class BotManager:
         messages_answer = []
         for player in game.players:
             messages_answer.append(
-                SendMessage(chat_id=player.user.chat_id, text=f"Ответ:{game.answered}"))
+                SendMessage(chat_id=player.user.chat_id, text=f"Отвечено: {game.answered}"))
 
         res_quests = await asyncio.gather(
             *[self.app.store.tg_api.send_message(message) for message in messages_question])
         res_answer = await asyncio.gather(
             *[self.app.store.tg_api.send_message(message) for message in messages_answer])
 
-        await self.app.store.tg_api.send_you_turn(chat_id=game.round.player.user.chat_id, game=game)
+        for res_q, res_a in zip(res_quests, res_answer):
+            if isinstance(res_a, Exception):
+                self.logger.error(str(res_a))
+
+            if isinstance(res_q, Exception):
+                self.logger.error(str(res_q))
 
     async def next_player(self, game: Game):
+        """
+        Передача хода следующему игроку
+        """
         players_in_game = list(filter(lambda x: x.fails, game.players))
 
         if len(players_in_game) == 1 or players_in_game.index(game.round.player) + 1 > len(players_in_game):
@@ -47,28 +58,60 @@ class BotManager:
         await self.app.store.tg_api.send_you_turn(chat_id=next_player.user.chat_id, game=game)
 
     async def end_game_and_statistics(self, game: Game):
+        """
+        Закрывает игру и отправляет по ней статистику
+        """
         game.started = False
         await self.app.store.field.update_data(game)
 
         messages_score = []
         for player in game.players:
             messages_score.append(
-                SendMessage(chat_id=player.user.chat_id, text=f"{player.user.username}:{player.score}"))
+                SendMessage(chat_id=player.user.chat_id, text=f"{player.user.username}: {player.score}"))
 
         res_answer = await asyncio.gather(
-            *[self.app.store.tg_api.send_message(message) for message in messages_score])
+            *[self.app.store.tg_api.send_message(message) for message in messages_score], return_exceptions=True)
+
+        for result in res_answer:
+            if isinstance(result, Exception):
+                self.logger.error(str(result))
 
     async def send_winner(self, game: Game, user: UserTG):
+        """
+        Отправляет всем участникам игры имя победителя
+        """
         messages_winner = []
         for player in game.players:
             messages_winner.append(
-                SendMessage(chat_id=player.user.chat_id, text=f"Победитель{user.username}"))
+                SendMessage(chat_id=player.user.chat_id, text=f"Победитель: {user.username}"))
 
         res_answer = await asyncio.gather(
-            *[self.app.store.tg_api.send_message(message) for message in messages_winner])
+            *[self.app.store.tg_api.send_message(message) for message in messages_winner], return_exceptions=True)
+
+        for result in res_answer:
+            if isinstance(result, Exception):
+                self.logger.error(str(result))
+
+    async def send_inline_keyboard_start(self, users: list[UserTG], game: Game):
+        """
+        Отправляет стартовую кнопку всем пользователям бота
+        """
+        tasks = []
+        for user in users:
+            task = self.app.store.tg_api.send_inline_button_poll(game=game,
+                                                                 chat_id=user.chat_id)
+            tasks.append(task)
+
+        results = asyncio.gather(*tasks, return_exceptions=True)
+        for result in results:
+            if isinstance(result, Exception):
+                self.logger.error(str(result))
 
     @staticmethod
     def _new_answered(game: Game, letter_ans: str) -> str:
+        """
+        Составляет новый ответ и возвращает его
+        """
         result = ""
         for let in game.question.answer:
             if letter_ans == let and let not in game.answered:
@@ -82,6 +125,9 @@ class BotManager:
 
     @staticmethod
     def _get_win_player(players: list[Player]) -> Player:
+        """
+        Определяет игрока с самым большим количеством очков
+        """
         max_score = 0
         player_win = None
         for player in players:
@@ -108,7 +154,9 @@ class BotManager:
 
                         if game.round.player_id == player.id and game.started and player.fails:
 
-                            if len(update.message.text) == 1 and update.message.text in game.question.answer:  # Одна буква
+                            if len(update.message.text) == 1 \
+                                    and update.message.text in game.question.answer \
+                                    and update.message.text not in game.answered:  # Одна буква
 
                                 new_answered = self._new_answered(game, update.message.text)
                                 game.answered = new_answered
@@ -123,19 +171,27 @@ class BotManager:
                                     await self.end_game_and_statistics(game)
                                 else:
                                     message = SendMessage(chat_id=user.chat_id,
-                                                          text=f"Вы угадали и получили {score} очков")
+                                                          text=f"Вы угадали и получили {score} очков.")
                                     await self.app.store.tg_api.send_message(message)
-                                    await self.send_questions_and_answered(game)
+                                    await self.app.store.tg_api.send_you_turn(chat_id=user.chat_id, game=game)
 
-                            elif len(update.message.text) == 1:  # Неправильная буква
+                            elif len(update.message.text) == 1 \
+                                    and update.message.text in game.answered:  # Такая буква уже была
                                 message = SendMessage(chat_id=user.chat_id,
-                                                      text=f"Вы не угадали")
+                                                      text=f"Эта буква уже была.")
+                                await self.app.store.tg_api.send_message(message)
+                                await self.next_player(game)
+
+                            elif len(update.message.text) == 1 \
+                                    and update.message.text not in game.question.answer:  # Неправильная буква
+                                message = SendMessage(chat_id=user.chat_id,
+                                                      text=f"Такой буквы нет.")
                                 await self.app.store.tg_api.send_message(message)
                                 await self.next_player(game)
 
                             elif update.message.text == game.question.answer:  # Все слово правильное
                                 message = SendMessage(chat_id=user.chat_id,
-                                                      text="Вы победили")
+                                                      text="Вы победили.")
                                 await self.app.store.tg_api.send_message(message)
                                 await self.send_winner(game=game, user=user)
                                 await self.end_game_and_statistics(game)
@@ -149,16 +205,15 @@ class BotManager:
 
                             else:  # Слово не правильное
                                 message = SendMessage(chat_id=user.chat_id,
-                                                      text="Не правильное слово"
-                                                           "Вы выбыли из игры")
+                                                      text="Не правильное слово, вы выбыли из игры.")
                                 await self.app.store.tg_api.send_message(message)
 
                                 players_in_game = list(map(lambda x: x.fails, game.players))
                                 if len(players_in_game) <= 1:
-
                                     player_win = self._get_win_player(game.players)
                                     await self.send_winner(game, player_win.user)
                                     await self.end_game_and_statistics(game)
+
                                 else:
                                     player.fails = False
                                     await self.app.store.field.update_data(player)
@@ -173,32 +228,29 @@ class BotManager:
                     game = await self.app.store.field.create_game(user)
                     all_users = await self.app.store.field.get_all_users()
                     # all_users.remove(user)
+                    await self.send_inline_keyboard_start(all_users, game)
 
-                    tasks = []
-                    for user in all_users:
-                        task = self.app.store.tg_api.send_inline_button_poll(game=game,
-                                                                             chat_id=user.chat_id)
-                        tasks.append(task)
-
-                    result = asyncio.gather(*tasks)
-
-                elif update.callback_query.data.split("@")[0] == "poll_game":  # обработка ответа
+                elif update.callback_query.data.split("@")[0] == "poll_game":  # обработка ответа от пользователя
                     game = await self.app.store.field.get_game_by_id(
                         id_game=int(update.callback_query.data.split("@")[1]))
 
                     # if any(map(lambda x: x.user_id == user.id, game.players)):  # Если игрок уже в игре # TODO не забыть вернуть
                     if False:
-                        message = SendMessage(chat_id=user.chat_id, text="Вы уже в игре")
+                        message = SendMessage(chat_id=user.chat_id, text="Вы уже в этой игре.")
                         await self.app.store.tg_api.send_message(message)
-                    else:  # Игроки собраны
-                        # if len(game.players) + 1 >= 3:  # TODO не забыть вернуть
+                    else:
+                        # if len(game.players) + 1 >= 3:  # TODO не забыть вернуть # Игроки собраны
                         if len(game.players) + 1 >= 1:
                             game = await self.app.store.field.start_game(game)
                             await self.send_questions_and_answered(game)
 
+                            message = SendMessage(chat_id=game.round.player.user.chat_id,
+                                                  text="Ваш ход.")
+                            await self.app.store.tg_api.send_message(message)
+
                         else:  # Игрок добавлен
                             await self.app.store.field.create_player(user=user, game=game)
-                            message = SendMessage(chat_id=user.chat_id, text=f"Вы в игре")
+                            message = SendMessage(chat_id=user.chat_id, text=f"Вы добавлены в игру.")
                             await self.app.store.tg_api.send_message(message)
 
                 elif update.callback_query.data.split("@")[0] == "exit_game":  # выход из игры
@@ -206,5 +258,5 @@ class BotManager:
                     await self.app.store.field.exit_player_game(game, user)
                     await self.next_player(game)
 
-                    message = SendMessage(chat_id=user.chat_id, text="Вы вышли из игры")
+                    message = SendMessage(chat_id=user.chat_id, text="Вы вышли из игры.")
                     await self.app.store.tg_api.send_message(message)

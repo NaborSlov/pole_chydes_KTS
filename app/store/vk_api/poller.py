@@ -20,18 +20,17 @@ class Poller:
 
     async def stop(self):
         self.is_running = False
-        await asyncio.gather(*self.handle_tasks)
+
+        tasks = await asyncio.gather(*self.handle_tasks, return_exceptions=True)
+        for task in tasks:
+            if isinstance(task, Exception):
+                self.logger.error(str(task))
+
         await self.poll_task
 
     async def poll(self):
         while self.is_running:
             updates = await self.store.tg_api.poll()
-            try:
-                await self.store.bots_manager.handle_updates(updates)
-            except Exception as e:
-                print(e)
-
-            # task = asyncio.create_task(self.store.bots_manager.handle_updates(updates))
-            # task.add_done_callback(lambda x: self.logger.info(f"Выполнено {x}"))
-            # self.handle_tasks.append(task)
-
+            task = asyncio.create_task(self.store.bots_manager.handle_updates(updates))
+            task.add_done_callback(lambda x: self.logger.info(f"Выполнено {x}"))
+            self.handle_tasks.append(task)

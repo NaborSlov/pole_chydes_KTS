@@ -126,9 +126,15 @@ class VkApiAccessor(BaseAccessor):
                  "callback_data": f"exit_game@{game.id}"},
             ]
         ]}
+        question_message = SendMessage(chat_id=chat_id,
+                                       text=f"Вопрос: {game.question.description}")
+        answered_message = SendMessage(chat_id=chat_id,
+                                       text=f"Отвеченные буквы: {game.answered}")
 
         message = SendMessage(chat_id=chat_id,
                               text="Ваш ход",
                               reply_markup=json.dumps(reply_markup, ensure_ascii=False))
 
+        await self.send_message(question_message)
+        await self.send_message(answered_message)
         await self.send_message(message)
