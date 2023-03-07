@@ -1,19 +1,48 @@
 version: "3.9"
 
 services:
+  web:
+    build:
+      dockerfile: Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+      migration:
+        condition: service_completed_successfully
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./alembic_docker.ini:/app/alembic.ini
+      - ./config_docker.yaml:/app/config.yaml
+
+  migration:
+    build:
+      dockerfile: Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    command: alembic upgrade head
+    volumes:
+      - ./alembic_docker.ini:/app/alembic.ini
+      - ./config_docker.yaml:/app/config.yaml
+
+
   db:
     image: postgres:latest
-    ports:
-      - '5432:5432'
     environment:
       POSTGRES_USER: game_pole
       POSTGRES_PASSWORD: game_pole
       POSTGRES_DB: game_pole
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U game_pole -d game_pole" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
 
   test_db:
     image: postgres:latest
-    ports:
-      - '5430:5432'
     environment:
       POSTGRES_USER: game_pole
       POSTGRES_PASSWORD: game_pole
