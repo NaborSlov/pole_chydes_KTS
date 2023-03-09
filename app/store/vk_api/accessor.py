@@ -30,7 +30,7 @@ class VkApiAccessor(BaseAccessor):
     async def connect(self, app: "Application"):
         self.token = self.app.config.bot.token
         self.session = ClientSession(connector=TCPConnector(verify_ssl=False))
-        self.poller = Poller(app.store)
+        self.poller = Poller(app.store, app.config)
         self.logger.info("start polling")
         await self.poller.start()
 

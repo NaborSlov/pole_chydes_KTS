@@ -1,7 +1,9 @@
 import asyncio
+import datetime
 import random
 import typing
 from logging import getLogger
+import itertools
 
 from app.field_wonder import Game, UserTG, Player
 from app.store.vk_api.dataclasses import SendMessage, Updates
@@ -47,13 +49,15 @@ class BotManager:
         Передача хода следующему игроку
         """
         players_in_game = list(filter(lambda x: x.fails, game.players))
+        player_index = players_in_game.index(game.round.player)
 
-        if len(players_in_game) == 1 or players_in_game.index(game.round.player) + 1 > len(players_in_game):
+        if len(players_in_game) == 1 or player_index + 1 > len(players_in_game) - 1:
             next_player = players_in_game[0]
         else:
-            next_player = players_in_game[players_in_game.index(game.round.player) + 1]
+            next_player = players_in_game[player_index + 1]
 
         game.round.player_id = next_player.id
+        game.round.finished = datetime.datetime.now() + datetime.timedelta(minutes=2)
         await self.app.store.field.update_data(game)
         await self.app.store.tg_api.send_you_turn(chat_id=next_player.user.chat_id, game=game)
 
@@ -137,7 +141,20 @@ class BotManager:
 
         return player_win
 
+    async def check_user_waiting(self):
+        rounds = self.app.store.field.get_all_rounds()
+        for round_game in rounds:
+            if round_game.finished < datetime.datetime.now():
+                game = await self.app.store.field.get_game_by_id(id_game=round_game.game.id)
+                await self.app.store.field.exit_player_game(game=game, user=round_game.player.user)
+                await self.next_player(game=game)
+
+                message = SendMessage(chat_id=round_game.player.user.chat_id, text="Вы вышли из игры.")
+                await self.app.store.tg_api.send_message(message)
+
     async def handle_updates(self, updates: list[Updates]):
+        await self.check_user_waiting()
+
         for update in updates:
 
             if update.message:
@@ -234,13 +251,12 @@ class BotManager:
                     game = await self.app.store.field.get_game_by_id(
                         id_game=int(update.callback_query.data.split("@")[1]))
 
-                    # if any(map(lambda x: x.user_id == user.id, game.players)):  # Если игрок уже в игре # TODO не забыть вернуть
-                    if False:
+                    if any(map(lambda x: x.user_id == user.id, game.players)):  # Если игрок уже в игре
                         message = SendMessage(chat_id=user.chat_id, text="Вы уже в этой игре.")
                         await self.app.store.tg_api.send_message(message)
                     else:
                         # if len(game.players) + 1 >= 3:  # TODO не забыть вернуть # Игроки собраны
-                        if len(game.players) + 1 >= 1:
+                        if len(game.players) + 1 >= 2:
                             game = await self.app.store.field.start_game(game)
                             await self.send_questions_and_answered(game)
 
@@ -255,8 +271,10 @@ class BotManager:
 
                 elif update.callback_query.data.split("@")[0] == "exit_game":  # выход из игры
                     game = await self.app.store.field.get_game_by_id(int(update.callback_query.data.split("@")[1]))
+                    if len(game.players) > 1:
+                        await self.next_player(game)
+
                     await self.app.store.field.exit_player_game(game, user)
-                    await self.next_player(game)
 
                     message = SendMessage(chat_id=user.chat_id, text="Вы вышли из игры.")
                     await self.app.store.tg_api.send_message(message)

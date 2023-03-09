@@ -35,11 +35,17 @@ class DatabaseConfig:
 
 
 @dataclass
+class RabbitMQ:
+    url: str
+
+
+@dataclass
 class Config:
     admin: AdminConfig
     session: Session
     bot: BotConfig
     database: DatabaseConfig
+    rabbit: RabbitMQ
 
 
 def setup_config(app: "Application", config_path: str) -> None:
@@ -60,4 +66,5 @@ def setup_config(app: "Application", config_path: str) -> None:
             token=raw_config['bot']['token'],
         ),
         database=DatabaseConfig(**raw_config['database'], url_database=url_database),
+        rabbit=RabbitMQ(url=raw_config['rabbitmq']['url'])
     )

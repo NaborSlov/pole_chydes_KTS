@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import random
+from typing import List
 
 from sqlalchemy import select, update, delete
 from sqlalchemy.orm import selectinload
@@ -93,7 +94,7 @@ class FieldWonder(BaseAccessor):
             player = random.choice(game.players)
             await session.execute(update(Round).where(Round.id == game.round_id).values(
                 player_id=player.id,
-                finished=datetime.datetime.now() + datetime.timedelta(minutes=5)
+                finished=datetime.datetime.now() + datetime.timedelta(minutes=2)
             ))
 
             game = await session.scalar(
@@ -122,3 +123,10 @@ class FieldWonder(BaseAccessor):
             await session.execute(
                 delete(Player).where(Player.user_id == user.id, Player.game_id == game.id))
             await session.commit()
+
+    async def get_all_rounds(self) -> list[Round] | list:
+        async with self.app.database.session.begin() as session:
+            result = await session.scalars(select(Round).options(selectinload(Round.game),
+                                                                 selectinload(Round.player).selectinload(
+                                                                     Player.user)).where(Round.game.started is True))
+        return result if result else []

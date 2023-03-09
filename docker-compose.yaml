@@ -9,6 +9,8 @@ services:
         condition: service_healthy
       migration:
         condition: service_completed_successfully
+      rabbitmq:
+        condition: service_started
     ports:
       - "8080:8080"
     volumes:
@@ -26,6 +28,12 @@ services:
       - ./alembic_docker.ini:/app/alembic.ini
       - ./config_docker.yaml:/app/config.yaml
 
+  rabbitmq:
+    image: rabbitmq:latest
+    hostname: my-rabbit
+    ports:
+      - "5672:5672"
+      - "15672:15672"
 
   db:
     image: postgres:latest
