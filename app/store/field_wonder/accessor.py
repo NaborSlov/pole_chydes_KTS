@@ -1,18 +1,16 @@
-import asyncio
 import datetime
 import random
-from typing import List
+from typing import Optional, Union
 
 from sqlalchemy import select, update, delete
 from sqlalchemy.orm import selectinload
 
 from app.base.base_accessor import BaseAccessor
 from app.field_wonder import Game, Player, UserTG, Round, Question
-from app.store.vk_api.dataclasses import SendMessage
 
 
 class FieldWonder(BaseAccessor):
-    async def get_games(self) -> list[Game] | None:
+    async def get_games(self) -> Optional[list[Game]]:
         query = select(Game).options(selectinload(Game.players).selectinload(Player.user),
                                      selectinload(Game.question))
 
@@ -20,14 +18,14 @@ class FieldWonder(BaseAccessor):
             rows = await session.scalars(query)
             result = rows.all()
 
-        return result if result else None
+        return result or None
 
-    async def get_all_users(self) -> list[UserTG] | list:
+    async def get_all_users(self) -> Union[list[UserTG], list]:
         async with self.app.database.session.begin() as session:
             row = await session.scalars(select(UserTG))
             users = row.all()
 
-            return users if users else []
+            return users or []
 
     async def get_or_create_user_tg(self, chat_id: int, username: str) -> UserTG:
         query = select(UserTG).where(UserTG.chat_id == chat_id,
@@ -124,9 +122,9 @@ class FieldWonder(BaseAccessor):
                 delete(Player).where(Player.user_id == user.id, Player.game_id == game.id))
             await session.commit()
 
-    async def get_all_rounds(self) -> list[Round] | list:
+    async def get_all_rounds(self) -> Union[list[Round], list]:
         async with self.app.database.session.begin() as session:
             result = await session.scalars(select(Round).options(selectinload(Round.game),
                                                                  selectinload(Round.player).selectinload(
                                                                      Player.user)).where(Round.game.started is True))
-        return result if result else []
+        return result or []

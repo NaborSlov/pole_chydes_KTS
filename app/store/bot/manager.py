@@ -3,7 +3,6 @@ import datetime
 import random
 import typing
 from logging import getLogger
-import itertools
 
 from app.field_wonder import Game, UserTG, Player
 from app.store.vk_api.dataclasses import SendMessage, Updates
@@ -39,10 +38,10 @@ class BotManager:
 
         for res_q, res_a in zip(res_quests, res_answer):
             if isinstance(res_a, Exception):
-                self.logger.error(str(res_a))
+                self.logger.exception('send_question', exc_info=res_a)
 
             if isinstance(res_q, Exception):
-                self.logger.error(str(res_q))
+                self.logger.exception('send_answered', exc_info=res_q)
 
     async def next_player(self, game: Game):
         """
@@ -78,7 +77,7 @@ class BotManager:
 
         for result in res_answer:
             if isinstance(result, Exception):
-                self.logger.error(str(result))
+                self.logger.exception("send_statistic", exc_info=result)
 
     async def send_winner(self, game: Game, user: UserTG):
         """
@@ -94,7 +93,7 @@ class BotManager:
 
         for result in res_answer:
             if isinstance(result, Exception):
-                self.logger.error(str(result))
+                self.logger.exception("send_winner", exc_info=result)
 
     async def send_inline_keyboard_start(self, users: list[UserTG], game: Game):
         """
@@ -109,7 +108,7 @@ class BotManager:
         results = asyncio.gather(*tasks, return_exceptions=True)
         for result in results:
             if isinstance(result, Exception):
-                self.logger.error(str(result))
+                self.logger.exception("send_button_start", exc_info=result)
 
     @staticmethod
     def _new_answered(game: Game, letter_ans: str) -> str:
@@ -244,7 +243,7 @@ class BotManager:
                 if update.callback_query.data.split("@")[0] == "create_poll":  # создания опроса
                     game = await self.app.store.field.create_game(user)
                     all_users = await self.app.store.field.get_all_users()
-                    # all_users.remove(user)
+                    # all_users.remove(user)  # TODO не забыть вернуть
                     await self.send_inline_keyboard_start(all_users, game)
 
                 elif update.callback_query.data.split("@")[0] == "poll_game":  # обработка ответа от пользователя
