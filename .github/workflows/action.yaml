@@ -1,0 +1,61 @@
+name: Build_and_deploy
+on:
+  push:
+    branches:
+      - dev
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: clone code
+        uses: actions/checkout@v3
+      - name: docker build
+        run: docker build -t naborslov/diplom_kts:$GITHUB_REF_NAME-$GITHUB_RUN_ID .
+      - name: login to Docker hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: docker push
+        run: docker push naborslov/diplom_kts:$GITHUB_REF_NAME-$GITHUB_RUN_ID
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build_and_push
+    env:
+      KEY_SESSION: ${{ secrets.KEY_SESSION }}
+      USERNAME_ADMIN: ${{ secrets.USERNAME_ADMIN }}
+      USERNAME_PASSWORD: ${{ secrets.USERNAME_PASSWORD }}
+      DB_USER: ${{ secrets.DB_USER }}
+      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      DB_NAME: ${{ secrets.DB_NAME }}
+      TOKEN_TG: ${{ secrets.TOKEN_TG }}
+      RABBIT_USER: ${{ secrets.RABBIT_USER }}
+      RABBIT_PASSWORD: ${{ secrets.RABBIT_PASSWORD }}
+    steps:
+      - name: clone code
+        uses: actions/checkout@v3
+      - name: render configs
+        run: |
+          mkdir deploy
+          cat ci-files/docker-compose-ci.yaml | envsubst > deploy/docker-compose.yaml
+          cat ci-files/config-ci.yaml | envsubst > deploy/config.yaml
+          cat ci-files/alembic-ci.ini | envsubst > deploy/alembic.ini
+      - name: clone files to server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          source: "deploy/docker-compose.yaml,deploy/alembic.ini,deploy/config.yaml"
+          target: "app"
+          strip_components: 1
+      - name: run docker-compose
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd app
+            docker compose up -d

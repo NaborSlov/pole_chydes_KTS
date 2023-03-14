@@ -11,3 +11,5 @@ database:
   database: test
 bot:
   token: my_secret_token_tg
+rabbitmq:
+  url: amqp://guest:guest@127.0.0.1/

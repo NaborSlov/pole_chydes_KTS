@@ -1,6 +1,7 @@
 import asyncio
 from asyncio import Task
 from logging import getLogger
+from typing import Optional, Union
 
 from aio_pika import connect_robust, RobustConnection
 from aio_pika.patterns import Master, RejectMessage
@@ -15,11 +16,11 @@ class Poller:
         self.store = store
         self.logger = getLogger("poller")
         self.is_running = False
-        self.poll_task: Task | None = None
-        self.worker: Task | None = None
-        self.handle_tasks: list[Task] | list = []
-        self.connection_master: RobustConnection | None = None
-        self.connection_worker: RobustConnection | None = None
+        self.poll_task: Optional[Task] = None
+        self.worker: Optional[Task] = None
+        self.handle_tasks: Union[list[Task], list] = []
+        self.connection_master: Optional[RobustConnection] = None
+        self.connection_worker: Optional[RobustConnection] = None
 
     async def start(self):
         self.connection_master = await connect_robust(f"{self.config.rabbit.url}?name=aio-pika%20master")
@@ -70,4 +71,4 @@ class Poller:
         try:
             await self.store.bots_manager.handle_updates(updates)
         except Exception as e:
-            self.logger.error(e)
+            self.logger.exception("task_exception", exc_info=e)

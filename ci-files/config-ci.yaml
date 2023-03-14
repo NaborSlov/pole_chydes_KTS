@@ -1,0 +1,15 @@
+session:
+  key: ${KEY_SESSION}
+admin:
+  username: ${USERNAME_ADMIN}
+  password: ${USERNAME_PASSWORD}
+database:
+  host: db
+  port: 5432
+  user: ${DB_USER}
+  password: ${DB_PASSWORD}
+  database: ${DB_NAME}
+bot:
+  token: ${TOKEN_TG}
+rabbitmq:
+  url: amqp://${RABBIT_USER}:${RABBIT_PASSWORD}@rabbitmq/
