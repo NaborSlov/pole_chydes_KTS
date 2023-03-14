@@ -5,7 +5,7 @@ from typing import Optional, Union
 
 from aio_pika import connect_robust, RobustConnection
 from aio_pika.patterns import Master, RejectMessage
-from aiormq import AMQPConnectionError
+from aiormq.exceptions import AMQPConnectionError
 
 from app.store import Store
 from app.web.config import Config
@@ -24,12 +24,12 @@ class Poller:
         self.connection_worker: Optional[RobustConnection] = None
 
     async def start(self):
-        await self.connections_rabbit()
+        await self.connections_rabbitmq()
         self.is_running = True
         self.worker = asyncio.create_task(self.working())
         self.poll_task = asyncio.create_task(self.poll())
 
-    async def connections_rabbit(self):
+    async def connections_rabbitmq(self):
         count = 0
         while True:
             try:
@@ -40,9 +40,8 @@ class Poller:
                 if count > 10:
                     raise error
 
-                count += 1
                 print('waiting for connection')
-                await asyncio.sleep(5)
+                await asyncio.sleep(10)
 
     async def stop(self):
         self.is_running = False
