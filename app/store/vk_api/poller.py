@@ -41,7 +41,7 @@ class Poller:
                     raise error
 
                 print('waiting for connection')
-                await asyncio.sleep(10)
+                await asyncio.sleep(20)
 
     async def stop(self):
         self.is_running = False
