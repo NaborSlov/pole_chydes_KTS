@@ -74,6 +74,7 @@ class FieldWonder(BaseAccessor):
             player = Player(user=user)
             round_game = Round()
             new_game = Game(round=round_game,
+                            owner_name=user.username,
                             question=question,
                             answered="_" * len(question.answer),
                             players=[player])
@@ -92,7 +93,7 @@ class FieldWonder(BaseAccessor):
             player = random.choice(game.players)
             await session.execute(update(Round).where(Round.id == game.round_id).values(
                 player_id=player.id,
-                finished=datetime.datetime.now() + datetime.timedelta(minutes=2)
+                finished=datetime.datetime.now() + datetime.timedelta(minutes=5)
             ))
 
             game = await session.scalar(
@@ -126,5 +127,7 @@ class FieldWonder(BaseAccessor):
         async with self.app.database.session.begin() as session:
             result = await session.scalars(select(Round).options(selectinload(Round.game),
                                                                  selectinload(Round.player).selectinload(
-                                                                     Player.user)).where(Round.game.started is True))
+                                                                     Player.user)))
+            result = [item for item in result.all() if item.game.started is True]
+
         return result or []

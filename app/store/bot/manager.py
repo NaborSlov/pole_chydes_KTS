@@ -58,6 +58,13 @@ class BotManager:
         game.round.player_id = next_player.id
         game.round.finished = datetime.datetime.now() + datetime.timedelta(minutes=2)
         await self.app.store.field.update_data(game)
+
+        message_turn = f"Сейчас ходит {next_player.user.username}"
+        await self.send_message_players_in_game(text=message_turn, game=game)
+
+        message = f"Сейчас ход {next_player.user.username}"
+        await self.send_message_players_in_game(game=game, text=message)
+
         await self.app.store.tg_api.send_you_turn(chat_id=next_player.user.chat_id, game=game)
 
     async def end_game_and_statistics(self, game: Game):
@@ -66,6 +73,9 @@ class BotManager:
         """
         game.started = False
         await self.app.store.field.update_data(game)
+
+        message = f"Игра завершена, статистика по игре:"
+        await self.send_message_players_in_game(game=game, text=message)
 
         messages_score = []
         for player in game.players:
@@ -102,13 +112,34 @@ class BotManager:
         tasks = []
         for user in users:
             task = self.app.store.tg_api.send_inline_button_poll(game=game,
-                                                                 chat_id=user.chat_id)
+                                                                 chat_id=user.chat_id,
+                                                                 username=game.owner_name)
             tasks.append(task)
 
         results = asyncio.gather(*tasks, return_exceptions=True)
         for result in results:
             if isinstance(result, Exception):
                 self.logger.exception("send_button_start", exc_info=result)
+
+    async def send_message_players_in_game(self, game: Game, text: str):
+        """
+        Отправляет сообщение всем игрокам в игре
+        """
+        tasks = []
+        for player in game.players:
+            message = SendMessage(chat_id=player.user.chat_id, text=text)
+            task = self.app.store.tg_api.send_message(message)
+
+            tasks.append(task)
+
+        results = asyncio.gather(*tasks, return_exceptions=True)
+        if isinstance(results, list):
+            for result in results:
+                if isinstance(result, Exception):
+                    self.logger.exception("send_all_players", exc_info=result)
+        else:
+            if isinstance(results, Exception):
+                self.logger.exception("send_all_players", exc_info=results)
 
     @staticmethod
     def _new_answered(game: Game, letter_ans: str) -> str:
@@ -141,7 +172,7 @@ class BotManager:
         return player_win
 
     async def check_user_waiting(self):
-        rounds = self.app.store.field.get_all_rounds()
+        rounds = await self.app.store.field.get_all_rounds()
         for round_game in rounds:
             if round_game.finished < datetime.datetime.now():
                 game = await self.app.store.field.get_game_by_id(id_game=round_game.game.id)
@@ -184,11 +215,11 @@ class BotManager:
                                 await self.app.store.field.update_data(game)
 
                                 if game.question.answer == new_answered:
+                                    await self.send_winner(game=game, user=user)
                                     await self.end_game_and_statistics(game)
                                 else:
-                                    message = SendMessage(chat_id=user.chat_id,
-                                                          text=f"Вы угадали и получили {score} очков.")
-                                    await self.app.store.tg_api.send_message(message)
+                                    message = f"Игрок {user.username} правильно назвал букву и получил {score} очков."
+                                    await self.send_message_players_in_game(game=game, text=message)
                                     await self.app.store.tg_api.send_you_turn(chat_id=user.chat_id, game=game)
 
                             elif len(update.message.text) == 1 \
@@ -243,30 +274,38 @@ class BotManager:
                 if update.callback_query.data.split("@")[0] == "create_poll":  # создания опроса
                     game = await self.app.store.field.create_game(user)
                     all_users = await self.app.store.field.get_all_users()
-                    # all_users.remove(user)  # TODO не забыть вернуть
+                    all_users = list(filter(lambda x: x.chat_id != user.chat_id, all_users))
+
                     await self.send_inline_keyboard_start(all_users, game)
+                    await self.app.store.tg_api.send_message(SendMessage(chat_id=user.chat_id,
+                                                                         text="Ожидайте когда соберутся "
+                                                                              "все игроки"))
 
                 elif update.callback_query.data.split("@")[0] == "poll_game":  # обработка ответа от пользователя
                     game = await self.app.store.field.get_game_by_id(
                         id_game=int(update.callback_query.data.split("@")[1]))
 
                     if any(map(lambda x: x.user_id == user.id, game.players)):  # Если игрок уже в игре
-                        message = SendMessage(chat_id=user.chat_id, text="Вы уже в этой игре.")
+                        message = SendMessage(chat_id=user.chat_id, text=f"Вы уже в игре {game.owner_name}")
                         await self.app.store.tg_api.send_message(message)
                     else:
-                        # if len(game.players) + 1 >= 3:  # TODO не забыть вернуть # Игроки собраны
-                        if len(game.players) + 1 >= 2:
-                            game = await self.app.store.field.start_game(game)
-                            await self.send_questions_and_answered(game)
+                        if len(game.players) + 1 >= 3:  # Все игроки собранны, начало игры
+                            game = await self.app.store.field.start_game(game=game)
+                            await self.send_questions_and_answered(game=game)
 
-                            message = SendMessage(chat_id=game.round.player.user.chat_id,
-                                                  text="Ваш ход.")
-                            await self.app.store.tg_api.send_message(message)
+                            message_start = f"Игра игрока {game.owner_name} началась"
+                            await self.send_message_players_in_game(game=game, text=message_start)
+
+                            message_turn = f"Сейчас ход {game.round.player.user.username}"
+                            await self.send_message_players_in_game(game=game, text=message_turn)
 
                         else:  # Игрок добавлен
                             await self.app.store.field.create_player(user=user, game=game)
-                            message = SendMessage(chat_id=user.chat_id, text=f"Вы добавлены в игру.")
+                            message = SendMessage(chat_id=user.chat_id, text=f"Вы добавлены в игру {game.owner_name}")
                             await self.app.store.tg_api.send_message(message)
+
+                            text = f"{len(game.players) + 1}/3 в игре {game.owner_name}"
+                            await self.send_message_players_in_game(game, text=text)
 
                 elif update.callback_query.data.split("@")[0] == "exit_game":  # выход из игры
                     game = await self.app.store.field.get_game_by_id(int(update.callback_query.data.split("@")[1]))

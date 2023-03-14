@@ -59,6 +59,10 @@ class VkApiAccessor(BaseAccessor):
                                                           "allowed_updates": [],
                                                       }, )) as resp:
             data = await resp.json()
+
+            if not data['ok']:
+                self.logger.error(f"poll_result:{data}")
+
             self.logger.info(f"poll_result:{data}")
 
             try:
@@ -102,7 +106,7 @@ class VkApiAccessor(BaseAccessor):
 
         await self.send_message(message)
 
-    async def send_inline_button_poll(self, game: Game, chat_id: int):
+    async def send_inline_button_poll(self, game: Game, chat_id: int, username: str):
         reply_markup = {"inline_keyboard": [
             [
                 {"text": f"Да",
@@ -114,7 +118,7 @@ class VkApiAccessor(BaseAccessor):
         ]}
 
         message = SendMessage(chat_id=chat_id,
-                              text=f"Хотите ли начать игру",
+                              text=f"Игрок {username} создал игру, хотите присоединиться?",
                               reply_markup=json.dumps(reply_markup, ensure_ascii=False))
 
         await self.send_message(message)

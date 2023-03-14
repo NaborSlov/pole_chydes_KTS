@@ -27,6 +27,7 @@ class Game(DBBase):
     __tablename__ = 'game'
 
     round_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('round.id'), nullable=True)
+    owner_name: sa_orm.Mapped[str] = sa_orm.mapped_column()
     question_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('question.id'), nullable=True)
     answered: sa_orm.Mapped[str]
     started: sa_orm.Mapped[bool] = sa_orm.mapped_column(default=False)
