@@ -34,8 +34,6 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
-    volumes:
-      - rabbit_data:/var/lib/rabbitmq/mnesia/rabbit@my-rabbit
 
 
   db:
@@ -58,5 +56,4 @@ services:
 
 volumes:
   postgres_data:
-  rabbit_data:
 
