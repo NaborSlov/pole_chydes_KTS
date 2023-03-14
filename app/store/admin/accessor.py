@@ -44,7 +44,7 @@ class AdminAccessor(BaseAccessor):
         return result if result else None
 
     async def create_question(self, description: str, answer: str) -> Question:
-        new_question = Question(description=description, answer=answer)
+        new_question = Question(description=description, answer=answer.lower())
 
         query = select(Question).where(Question.description == description)
 

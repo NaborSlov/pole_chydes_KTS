@@ -61,6 +61,7 @@ class Poller:
             master = Master(channel)
 
             while self.is_running:
+                await self.store.bots_manager.check_user_waiting()
                 updates = await self.store.tg_api.poll()
 
                 if updates:
