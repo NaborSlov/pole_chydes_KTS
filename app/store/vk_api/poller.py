@@ -23,11 +23,25 @@ class Poller:
         self.connection_worker: Optional[RobustConnection] = None
 
     async def start(self):
-        self.connection_master = await connect_robust(f"{self.config.rabbit.url}?name=aio-pika%20master")
-        self.connection_worker = await connect_robust(f"{self.config.rabbit.url}?name=aio-pika%20worker")
+        await self.connections_rabbit()
         self.is_running = True
         self.worker = asyncio.create_task(self.working())
         self.poll_task = asyncio.create_task(self.poll())
+
+    async def connections_rabbit(self):
+        count = 0
+        while True:
+            try:
+                self.connection_master = await connect_robust(f"{self.config.rabbit.url}?name=aio-pika%20master")
+                self.connection_worker = await connect_robust(f"{self.config.rabbit.url}?name=aio-pika%20worker")
+                break
+            except ConnectionError as error:
+                if count > 10:
+                    raise error
+
+                count += 1
+                print('waiting for connection')
+                await asyncio.sleep(5)
 
     async def stop(self):
         self.is_running = False
