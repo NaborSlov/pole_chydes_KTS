@@ -5,6 +5,7 @@ from typing import Optional, Union
 
 from aio_pika import connect_robust, RobustConnection
 from aio_pika.patterns import Master, RejectMessage
+from aiormq import AMQPConnectionError
 
 from app.store import Store
 from app.web.config import Config
@@ -35,7 +36,7 @@ class Poller:
                 self.connection_master = await connect_robust(f"{self.config.rabbit.url}?name=aio-pika%20master")
                 self.connection_worker = await connect_robust(f"{self.config.rabbit.url}?name=aio-pika%20worker")
                 break
-            except ConnectionError as error:
+            except AMQPConnectionError as error:
                 if count > 10:
                     raise error
 
