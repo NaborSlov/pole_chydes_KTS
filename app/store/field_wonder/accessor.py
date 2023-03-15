@@ -76,7 +76,7 @@ class FieldWonder(BaseAccessor):
             new_game = Game(round=round_game,
                             owner_name=user.username,
                             question=question,
-                            answered="_" * len(question.answer),
+                            answered="*" * len(question.answer),
                             players=[player])
 
             session.add(new_game)
@@ -105,7 +105,7 @@ class FieldWonder(BaseAccessor):
             await session.commit()
             return game
 
-    async def get_player_by_user(self, user: UserTG):
+    async def get_players_by_user(self, user: UserTG):
         query = select(Player).where(Player.user_id == user.id)
         async with self.app.database.session.begin() as session:
             row = await session.scalars(query)

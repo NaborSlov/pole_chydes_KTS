@@ -24,7 +24,7 @@ class BotManager:
         message_question = f"Вопрос:{game.question.description}"
         await self.send_message_players_in_game(game=game, text=message_question)
 
-        message_answer = f"Отвечено: {game.answered}"
+        message_answer = f"Открытые буквы: {game.answered}"
         await self.send_message_players_in_game(game=game, text=message_answer)
 
     async def next_player(self, game: Game):
@@ -120,7 +120,7 @@ class BotManager:
             elif let in game.answered:
                 result += let
             else:
-                result += "_"
+                result += "*"
 
         return result
 
@@ -176,7 +176,7 @@ class BotManager:
                     await self.app.store.tg_api.send_inline_button_create_game(user)
 
                 else:  # ответ на вопрос
-                    players = await self.app.store.field.get_player_by_user(user)
+                    players = await self.app.store.field.get_players_by_user(user)
 
                     for player in players:
                         game = await self.app.store.field.get_game_by_id(player.game_id)
@@ -260,8 +260,8 @@ class BotManager:
                     all_users = await self.app.store.field.get_all_users()
                     all_users = list(filter(lambda x: x.chat_id != user.chat_id, all_users))
 
-                    await self.send_inline_keyboard_start(all_users, game)
                     await self.app.store.tg_api.send_inline_button_start(user=user, game=game)
+                    await self.send_inline_keyboard_start(all_users, game)
 
                 elif update.callback_query.data.split("@")[0] == "just_start_game":  # начать игру немедленно
                     game = await self.app.store.field.get_game_by_id(
@@ -276,7 +276,7 @@ class BotManager:
                         message = SendMessage(chat_id=user.chat_id, text=f"Вы уже в игре {game.owner_name}")
                         await self.app.store.tg_api.send_message(message)
                     else:
-                        if len(game.players) + 1 >= 4:  # Все игроки собранны, начало игры
+                        if len(game.players) + 1 >= 3:  # Все игроки собранны, начало игры
                             await self.start_game(game=game)
 
                         else:  # Игрок добавлен
@@ -284,7 +284,7 @@ class BotManager:
                             message = SendMessage(chat_id=user.chat_id, text=f"Вы добавлены в игру {game.owner_name}")
                             await self.app.store.tg_api.send_message(message)
 
-                            text = f"{len(game.players) + 1}/3 в игре {game.owner_name}"
+                            text = f"{len(game.players)}/3 в игре {game.owner_name}"
                             await self.send_message_players_in_game(game, text=text)
 
                 elif update.callback_query.data.split("@")[0] == "exit_game":  # выход из игры

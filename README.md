@@ -11,3 +11,8 @@
 ![version](https://img.shields.io/badge/yndex_cloud-4285F4?style=for-the-badge&logo=google-cloud&logoColor=white)
 ![version](https://img.shields.io/badge/docker-404D59?style=for-the-badge)
 ![version](https://img.shields.io/badge/Telegram-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)
+
+Указание игры
+
+Выход из игровой сессии
+Через 30 минут выход из игровой сессии
