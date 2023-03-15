@@ -202,6 +202,7 @@ class BotManager:
                                 else:
                                     message = f"Игрок {user.username} правильно назвал букву и получил {score} очков."
                                     await self.send_message_players_in_game(game=game, text=message)
+                                    await self.send_questions_and_answered(game=game)
                                     await self.app.store.tg_api.send_you_turn(chat_id=user.chat_id, game=game)
 
                             elif len(update.message.text) == 1 \
