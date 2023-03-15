@@ -146,7 +146,7 @@ class BotManager:
 
             if round_game.finished < datetime.datetime.now():
                 game = await self.app.store.field.get_game_by_id(id_game=round_game.game.id)
-                await self.app.store.field.exit_player_game(game=game, player=round_game.player)
+                await self.app.store.field.exit_player_game(player=round_game.player)
                 await self.next_player(game=game)
 
                 message = f"Игрок {round_game.player.user.username} вышел из игры: {game.owner_name}"
@@ -289,10 +289,12 @@ class BotManager:
 
                 elif update.callback_query.data.split("@")[0] == "exit_game":  # выход из игры
                     game = await self.app.store.field.get_game_by_id(int(update.callback_query.data.split("@")[1]))
+                    player = next(filter(lambda x: x.user_id == user.id, game.players))
+
                     if len(game.players) > 1:
                         await self.next_player(game)
 
-                    await self.app.store.field.exit_player_game(game, user)
+                    await self.app.store.field.exit_player_game(player)
 
                     message = f"Игрок {user.username} вышел из игры: {game.owner_name}"
                     await self.send_message_players_in_game(game=game, text=message)

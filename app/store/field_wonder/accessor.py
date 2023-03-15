@@ -116,11 +116,7 @@ class FieldWonder(BaseAccessor):
             session.add(model)
             await session.commit()
 
-    async def exit_player_game(self, game: Game, player: Player):
-        async with self.app.database.session.begin() as session:
-            await session.execute(update(Round).where(Round.game == game).values(player_id=None))
-            await session.commit()
-
+    async def exit_player_game(self, player: Player):
         async with self.app.database.session.begin() as session:
             await session.execute(delete(Player).where(Player.id == player.id))
             await session.commit()
