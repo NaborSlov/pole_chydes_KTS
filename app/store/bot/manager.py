@@ -79,9 +79,9 @@ class BotManager:
         """
         tasks = []
         for user in users:
-            task = await self.app.store.tg_api.send_inline_button_poll(game=game,
-                                                                       chat_id=user.chat_id,
-                                                                       username=game.owner_name)
+            task = self.app.store.tg_api.send_inline_button_poll(game=game,
+                                                                 chat_id=user.chat_id,
+                                                                 username=game.owner_name)
             tasks.append(task)
 
         results = asyncio.gather(*tasks, return_exceptions=True)
