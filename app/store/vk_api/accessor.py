@@ -92,7 +92,7 @@ class VkApiAccessor(BaseAccessor):
             data = await resp.json()
             self.logger.info(f"send_message:{data}")
 
-    async def send_inline_button_start(self, user: UserTG):
+    async def send_inline_button_create_game(self, user: UserTG):
         reply_markup = {"inline_keyboard": [
             [
                 {"text": f"Начать игру",
@@ -102,6 +102,20 @@ class VkApiAccessor(BaseAccessor):
 
         message = SendMessage(chat_id=user.chat_id,
                               text="Для того чтобы начать игру нажмите на",
+                              reply_markup=json.dumps(reply_markup, ensure_ascii=False))
+
+        await self.send_message(message)
+
+    async def send_inline_button_start(self, user: UserTG, game: Game):
+        reply_markup = {"inline_keyboard": [
+            [
+                {"text": f"Начать игру сразу",
+                 "callback_data": f"just_start_game@{game.id}"}
+            ]
+        ]}
+
+        message = SendMessage(chat_id=user.chat_id,
+                              text="Ожидайте когда соберутся все игроки",
                               reply_markup=json.dumps(reply_markup, ensure_ascii=False))
 
         await self.send_message(message)
@@ -130,15 +144,8 @@ class VkApiAccessor(BaseAccessor):
                  "callback_data": f"exit_game@{game.id}"},
             ]
         ]}
-        question_message = SendMessage(chat_id=chat_id,
-                                       text=f"Вопрос: {game.question.description}")
-        answered_message = SendMessage(chat_id=chat_id,
-                                       text=f"Отвеченные буквы: {game.answered}")
-
         message = SendMessage(chat_id=chat_id,
                               text="Ваш ход",
                               reply_markup=json.dumps(reply_markup, ensure_ascii=False))
 
-        await self.send_message(question_message)
-        await self.send_message(answered_message)
         await self.send_message(message)

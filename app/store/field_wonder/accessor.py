@@ -116,18 +116,17 @@ class FieldWonder(BaseAccessor):
             session.add(model)
             await session.commit()
 
-    async def exit_player_game(self, game: Game, user: UserTG):
+    async def exit_player_game(self, game: Game, player: Player):
         async with self.app.database.session.begin() as session:
             await session.execute(update(Round).where(Round.game == game).values(player_id=None))
             await session.execute(
-                delete(Player).where(Player.user_id == user.id, Player.game_id == game.id))
+                delete(Player).where(Player.id == player.id))
             await session.commit()
 
     async def get_all_rounds(self) -> Union[list[Round], list]:
         async with self.app.database.session.begin() as session:
             result = await session.scalars(select(Round).options(selectinload(Round.game),
-                                                                 selectinload(Round.player).selectinload(
-                                                                     Player.user)))
+                                                                 selectinload(Round.player).selectinload(Player.user)))
             result = [item for item in result.all() if item.game.started is True]
 
         return result or []
