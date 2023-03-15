@@ -119,7 +119,9 @@ class FieldWonder(BaseAccessor):
     async def exit_player_game(self, game: Game, player: Player):
         async with self.app.database.session.begin() as session:
             await session.execute(update(Round).where(Round.game == game).values(player_id=None))
-            await session.flush()
+            await session.commit()
+
+        async with self.app.database.session.begin() as session:
             await session.execute(delete(Player).where(Player.id == player.id))
             await session.commit()
 
