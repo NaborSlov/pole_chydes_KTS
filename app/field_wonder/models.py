@@ -40,7 +40,7 @@ class Game(DBBase):
 class Player(DBBase):
     __tablename__ = 'player'
 
-    user_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('user_tg.id'), nullable=True)
+    user_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('user_tg.id', ondelete="CASCADE"), nullable=True)
     game_id: sa_orm.Mapped[int] = sa_orm.mapped_column(sa.ForeignKey('game.id'), nullable=True)
     score: sa_orm.Mapped[int] = sa_orm.mapped_column(default=0)
     fails: sa_orm.Mapped[bool] = sa_orm.mapped_column(default=True)

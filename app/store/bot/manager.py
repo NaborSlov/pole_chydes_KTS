@@ -172,8 +172,28 @@ class BotManager:
             if update.message:
                 user = await self.app.store.field.get_or_create_user_tg(chat_id=update.message.from_.id,
                                                                         username=update.message.from_.username)
-                if update.message.text == "/start" or update.message.text == "/new_game":
+                if update.message.text == "/start":
+                    message = SendMessage(chat_id=user.chat_id,
+                                          text="""
+                                          Вы начали игровую сессию,                              
+                                          теперь вы можете получать приглашения от других игроков 
+                                          , если вы не хотите больше получать сообщения, 
+                                          нажмите на "Выход из игры".
+                                          """)
+                    await self.app.store.tg_api.send_message(message=message)
+
+                elif update.message.text == "/new_game":
                     await self.app.store.tg_api.send_inline_button_create_game(user)
+
+                elif update.message.text == "/exit_game":
+                    await self.app.store.field.del_user(user)
+                    message = SendMessage(chat_id=user.chat_id,
+                                          text="""
+                                          Вы вышли из игровой сессии,                              
+                                          если вы хотите получать приглашения в            
+                                          игры, нажмите на "Начать игру".
+                                          """)
+                    await self.app.store.tg_api.send_message(message=message)
 
                 else:  # ответ на вопрос
                     players = await self.app.store.field.get_players_by_user(user)

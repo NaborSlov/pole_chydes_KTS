@@ -128,3 +128,8 @@ class FieldWonder(BaseAccessor):
             result = [item for item in result.all() if item.game.started is True]
 
         return result or []
+
+    async def del_user(self, user: UserTG):
+        async with self.app.database.session.begin() as session:
+            await session.delete(user)
+            await session.commit()
